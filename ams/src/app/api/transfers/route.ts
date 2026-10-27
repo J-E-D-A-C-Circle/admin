@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { db } from '@/db';
+import { assets, assetTransfers, assetHistory, notifications, regions, stations, departments, employees, users } from '@/db/schema';
+import { eq, and, sql, like, or, count as countFn } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/mysql-core';
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-helper';
+import { logAudit } from '@/lib/audit-helper';
+
+const createTransferSchema = z.object({
+  assetId: z.string().min(1),
+  toRegionId: z.number().int().positive(),
+  toStationId: z.number().int().positive(),
+  toDepartmentId: z.number().int().positive(),
+  newEmployeeId: z.number().int().positive().optional().nullable(),
+  reason: z.string().min(1),
+});
+
+// Create table aliases for the multiple relations in transfers
+const fromRegion = alias(regions, 'from_region');
+const toRegion = alias(regions, 'to_region');
+const fromStation = alias(stations, 'from_station');
+const toStation = alias(stations, 'to_station');
+const fromDept = alias(departments, 'from_dept');
+const toDept = alias(departments, 'to_dept');
+const prevEmp = alias(employees, 'prev_emp');
+const newEmp = alias(employees, 'new_emp');
+const transferUser = alias(users, 'transfer_user');
+
+export async function GET(req: NextRequest) {
+  try {
+    const caller = verifyAuth(req);
+    if (!caller) return unauthorizedResponse();
+
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '15');
+    const search = searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
+
+    const conditions: any[] = [];
+    if (search) {
+      const term = `%${search}%`;
+      conditions.push(
+        or(
+          like(assetTransfers.assetId, term),
+          like(assets.name, term),
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, totalResult] = await Promise.all([
+      db
+        .select({
+          id: assetTransfers.id,
+          assetId: assetTransfers.assetId,
+          assetName: assets.name,
+          transferDate: assetTransfers.transferDate,
+          reason: assetTransfers.reason,
+          transferredBy: transferUser.name,
+          fromRegion: fromRegion.name,
+          toRegion: toRegion.name,
+          fromStation: fromStation.name,
+          toStation: toStation.name,
+          fromDepartment: fromDept.name,
+          toDepartment: toDept.name,
+          status: assetTransfers.status,
+          approvedByUserId: assetTransfers.approvedByUserId,
+          approvalDate: assetTransfers.approvalDate,
+          signatureUrl: assetTransfers.signatureUrl,
+        })
+        .from(assetTransfers)
+        .leftJoin(assets, eq(assetTransfers.assetId, assets.assetId))
+        .leftJoin(transferUser, eq(assetTransfers.transferredByUserId, transferUser.id))
+        .leftJoin(fromRegion, eq(assetTransfers.fromRegionId, fromRegion.id))
+        .leftJoin(toRegion, eq(assetTransfers.toRegionId, toRegion.id))
+        .leftJoin(fromStation, eq(assetTransfers.fromStationId, fromStation.id))
+        .leftJoin(toStation, eq(assetTransfers.toStationId, toStation.id))
+        .leftJoin(fromDept, eq(assetTransfers.fromDepartmentId, fromDept.id))
+        .leftJoin(toDept, eq(assetTransfers.toDepartmentId, toDept.id))
+        .leftJoin(prevEmp, eq(assetTransfers.previousEmployeeId, prevEmp.id))
+        .leftJoin(newEmp, eq(assetTransfers.newEmployeeId, newEmp.id))
+        .where(whereClause)
+        .orderBy(sql`${assetTransfers.transferDate} DESC`)
+        .limit(limit)
+        .offset(offset),
+      db
+        .select({ value: countFn() })
+        .from(assetTransfers)
+        .leftJoin(assets, eq(assetTransfers.assetId, assets.assetId))
+        .where(whereClause),
+    ]);
+
+    return NextResponse.json({ data: rows, total: totalResult[0]?.value || 0, page, limit });
+  } catch (err: any) {
+    console.error('Fetch transfers error:', err);
+    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const caller = verifyAuth(req);
+    if (!caller) return unauthorizedResponse();
+    if (caller.role !== 'Super Admin' && caller.role !== 'Regional Manager' && caller.role !== 'Asset Officer') {
+      return forbiddenResponse('Permission denied to initiate asset transfers');
+    }
+
+    const body = await req.json();
+    const parsed = createTransferSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ message: 'Validation failed', errors: parsed.error.errors }, { status: 400 });
+    }
+
+    const { assetId, toRegionId, toStationId, toDepartmentId, newEmployeeId, reason } = parsed.data;
+
+    // Fetch existing asset
+    const [existing] = await db.select().from(assets).where(eq(assets.assetId, assetId)).limit(1);
+    if (!existing) {
+      return NextResponse.json({ message: 'Asset not found' }, { status: 404 });
+    }
+
+    // Regional Manager scope
+    if (caller.role === 'Regional Manager' && existing.regionId !== caller.regionId) {
+      return forbiddenResponse('Regional Managers can only transfer assets within their region');
+    }
+
+    const result = await db.transaction(async (tx) => {
+      // 1. Insert Transfer record (Pending by default)
+      const [inserted] = await tx.insert(assetTransfers).values({
+        assetId,
+        fromRegionId: existing.regionId,
+        toRegionId,
+        fromStationId: existing.stationId,
+        toStationId,
+        fromDepartmentId: existing.departmentId,
+        toDepartmentId,
+        previousEmployeeId: existing.assignedEmployeeId,
+        newEmployeeId: newEmployeeId ?? null,
+        reason,
+        transferredByUserId: caller.sub,
+        status: 'Pending',
+      });
+
+      // 2. Create Notification for pending transfer
+      await tx.insert(notifications).values({
+        type: 'AssetTransferred',
+        message: `A transfer for Asset ${existing.name} (${assetId}) has been initiated and is pending approval.`,
+        assetId,
+      });
+
+      return { transferId: inserted.insertId };
+    });
+
+    await logAudit('Transferred Asset', caller.sub, req, assetId);
+    return NextResponse.json({ transferId: result.transferId, success: true }, { status: 201 });
+  } catch (err: any) {
+    console.error('Transfer asset error:', err);
+    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+  }
+}

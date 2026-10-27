@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Next.js & Build outputs
+.next/
+**/.next/
+out/
+**/out/
+build/
+**/build/
+.vercel
+**/.vercel
+
+# TypeScript build cache
+*.tsbuildinfo
+**/*.tsbuildinfo
+next-env.d.ts
+**/next-env.d.ts
+
+# Environment variables
+.env
+**/.env
+.env*.local
+**/.env*.local
+!.env.example
+!**/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Backups & runtime uploads
+ems/backups/*.gz
+ems/uploads/*
+!ems/uploads/.gitkeep
+!ems/backups/.gitkeep
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+*.pem
+.idea/
+.vscode/

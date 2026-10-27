@@ -1,0 +1,5 @@
+include:
+  - path: portal/docker-compose.yml
+  - path: ams/docker-compose.yml
+  - path: ems/docker-compose.yml
+  - path: fleet-mgt/docker-compose.yml

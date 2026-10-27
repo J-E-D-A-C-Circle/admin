@@ -1,0 +1,314 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-slate-950: var(--slate-950);
+  --color-slate-900: var(--slate-900);
+  --color-slate-800: var(--slate-800);
+  --color-slate-700: var(--slate-700);
+  --color-slate-600: var(--slate-600);
+  --color-slate-500: var(--slate-500);
+  --color-slate-400: var(--slate-400);
+  --color-slate-300: var(--slate-300);
+  --color-slate-200: var(--slate-200);
+  --color-slate-100: var(--slate-100);
+
+  --color-amber-500: var(--amber-500);
+  --color-amber-600: var(--amber-600);
+  --color-amber-400: var(--amber-400);
+}
+
+:root,
+html.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Theme variables mapping to dark mode colors */
+  --slate-950: #020617;
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f8fafc;
+
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-400: #fbbf24;
+}
+
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Light mode colors matching the user's images (high contrast) */
+  --slate-950: #ffffff;
+  /* Card / dialog backgrounds */
+  --slate-900: #ffffff;
+  /* Sidebar background */
+  --slate-800: #e2e8f0;
+  /* Borders */
+  --slate-700: #cbd5e1;
+  /* Hover borders */
+  --slate-600: #334155;
+  /* Inactive sidebar / secondary labels text (high contrast) */
+  --slate-500: #475569;
+  /* Secondary texts / placeholders (high contrast) */
+  --slate-400: #64748b;
+  /* Muted subtext / lines (high contrast) */
+  --slate-300: #1e293b;
+  /* Body text */
+  --slate-200: #0f172a;
+  /* Headings */
+  --slate-100: #0f172a;
+  /* High-contrast text */
+
+  /* Emerald/green brand colors matching the user's images */
+  --amber-500: #00966c;
+  /* Vibrant emerald green for primary actions & indicators */
+  --amber-600: #007f5a;
+  /* Button hover state */
+  --amber-400: #047857;
+  /* Accent text links and active states */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate-800);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-700);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--amber-500);
+  outline-offset: 2px;
+}
+
+/* Table row hover */
+tbody tr:hover {
+  background: var(--background);
+}
+
+/* Transitions */
+*,
+*::before,
+*::after {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Override for transforms — keep them instant */
+.transition-all {
+  transition-property: all;
+}
+
+/* ── Light-mode overrides for CSS layout structures ── */
+html.light body,
+html.light .flex.h-screen.overflow-hidden,
+html.light .h-full.flex.items-center.justify-center {
+  background-color: #f8fafc !important;
+}
+
+/* Force titles to use very dark slate in light mode */
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+/* Make primary button texts white in light mode */
+html.light .bg-amber-500,
+html.light .bg-amber-600 {
+  color: #ffffff !important;
+}
+
+/* Fix input, select, and textarea fields to look gorgeous in light mode */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Style active filters/tabs in light mode */
+html.light .bg-slate-800\/60 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ── Light mode overrides for verifications status badges ── */
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .bg-emerald-950\/50 {
+  background-color: #ecfdf5 !important;
+}
+
+html.light .border-emerald-900\/50 {
+  border-color: #a7f3d0 !important;
+}
+
+html.light .text-amber-400 {
+  color: #b45309 !important;
+}
+
+html.light .bg-amber-950\/50 {
+  background-color: #fef3c7 !important;
+}
+
+html.light .border-amber-900\/50 {
+  border-color: #fde68a !important;
+}
+
+html.light .text-red-400 {
+  color: #b91c1c !important;
+}
+
+html.light .bg-red-950\/50 {
+  background-color: #fee2e2 !important;
+}
+
+html.light .border-red-900\/50 {
+  border-color: #fca5a5 !important;
+}
+
+/* ── Light mode overrides for Dashboard KPI Cards ── */
+html.light .bg-emerald-950\/20 {
+  background-color: #ecfdf5 !important;
+}
+
+html.light .border-emerald-900\/50 {
+  border-color: #a7f3d0 !important;
+}
+
+html.light .text-emerald-100 {
+  color: #047857 !important;
+}
+
+html.light .bg-amber-950\/20 {
+  background-color: #fffbeb !important;
+}
+
+html.light .border-amber-900\/50 {
+  border-color: #fde68a !important;
+}
+
+html.light .text-amber-100 {
+  color: #b45309 !important;
+}
+
+html.light .bg-red-950\/20 {
+  background-color: #fef2f2 !important;
+}
+
+html.light .border-red-900\/50 {
+  border-color: #fca5a5 !important;
+}
+
+html.light .text-red-100 {
+  color: #b91c1c !important;
+}
+
+html.light .bg-slate-950\/40 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light .bg-slate-900\/40 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .bg-blue-950\/20 {
+  background-color: #eff6ff !important;
+}
+
+html.light .border-blue-900\/50 {
+  border-color: #bfdbfe !important;
+}
+
+html.light .text-blue-100 {
+  color: #1d4ed8 !important;
+}
+
+html.light .bg-rose-950\/20 {
+  background-color: #fff1f2 !important;
+}
+
+html.light .border-rose-900\/50 {
+  border-color: #fecdd3 !important;
+}
+
+html.light .text-rose-100 {
+  color: #be123c !important;
+}
+
+html.light .bg-teal-950\/20 {
+  background-color: #f0fdfa !important;
+}
+
+html.light .border-teal-900\/50 {
+  border-color: #99f6e4 !important;
+}
+
+html.light .text-teal-100 {
+  color: #0f766e !important;
+}
+
+html.light .bg-orange-950\/20 {
+  background-color: #fff7ed !important;
+}
+
+html.light .border-orange-900\/50 {
+  border-color: #fed7aa !important;
+}
+
+html.light .text-orange-100 {
+  color: #c2410c !important;
+}
+
+/* recharts tooltip styling in light mode */
+html.light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05) !important;
+}
+
+html.light .recharts-default-tooltip .recharts-tooltip-item,
+html.light .recharts-default-tooltip .recharts-tooltip-label {
+  color: #0f172a !important;
+}

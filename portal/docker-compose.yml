@@ -1,0 +1,16 @@
+services:
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dvla-portal
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - dvla-admin-net
+
+networks:
+  dvla-admin-net:
+    name: dvla-admin-net
+    driver: bridge

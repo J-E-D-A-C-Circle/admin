@@ -1,0 +1,6 @@
+out
+.git
+.gitignore
+docker-compose*
+Dockerfile
+.env*

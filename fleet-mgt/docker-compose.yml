@@ -1,0 +1,72 @@
+services:
+  fleet-db:
+    image: mysql:8.0
+    container_name: fleet-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: fleet_root_password
+      MYSQL_DATABASE: fleet_db
+      MYSQL_USER: fleet_user
+      MYSQL_PASSWORD: fleet_password
+    ports:
+      - '3309:3306'
+    volumes:
+      - fleet_db_data:/var/lib/mysql
+      - ./src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - fleet-network
+      - dvla-admin-net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u $$MYSQL_USER -p$$MYSQL_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  fleet-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: fleet-phpmyadmin
+    restart: always
+    ports:
+      - '8083:80'
+    environment:
+      - PMA_HOST=fleet-db
+      - PMA_USER=fleet_user
+      - PMA_PASSWORD=fleet_password
+    depends_on:
+      fleet-db:
+        condition: service_healthy
+    networks:
+      - fleet-network
+      - dvla-admin-net
+
+  fleet-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fleet-web
+    restart: always
+    ports:
+      - '3003:3003'
+    environment:
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=mysql://fleet_user:fleet_password@fleet-db:3306/fleet_db
+      - JWT_SECRET=super-secure-dvla-fleet-jwt-secret-key-2026
+      - PORT=3003
+      - NODE_ENV=production
+    depends_on:
+      fleet-db:
+        condition: service_healthy
+    networks:
+      - fleet-network
+      - dvla-admin-net
+
+volumes:
+  fleet_db_data:
+
+networks:
+  fleet-network:
+    driver: bridge
+  dvla-admin-net:
+    name: dvla-admin-net
+    driver: bridge

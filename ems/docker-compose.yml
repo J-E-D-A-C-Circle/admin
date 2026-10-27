@@ -1,0 +1,102 @@
+services:
+  ems-db:
+    image: mysql:8.0
+    container_name: ems-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ems_root_password
+      MYSQL_DATABASE: ems_db
+      MYSQL_USER: ems_user
+      MYSQL_PASSWORD: ems_password
+    ports:
+      - '3308:3306'
+    volumes:
+      - ems_mysql_data:/var/lib/mysql
+      - ./src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - ems-network
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u $$MYSQL_USER -p$$MYSQL_PASSWORD" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  ems-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ems-phpmyadmin
+    restart: always
+    ports:
+      - '8082:80'
+    environment:
+      - PMA_HOST=ems-db
+      - PMA_USER=ems_user
+      - PMA_PASSWORD=ems_password
+    depends_on:
+      ems-db:
+        condition: service_healthy
+    networks:
+      - ems-network
+
+  ems-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ems-web
+    restart: always
+    ports:
+      - '3002:3002'
+    environment:
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=mysql://ems_user:ems_password@ems-db:3306/ems_db
+      - JWT_SECRET=dvla-ghana-post-ems-expenditure-jwt-secret-key-2026-standalone
+      - PORT=3002
+      - NODE_ENV=production
+    volumes:
+      - ems_uploads:/app/uploads
+    depends_on:
+      ems-db:
+        condition: service_healthy
+    networks:
+      - ems-network
+      - dvla-admin-net
+
+  # Daily automatic MySQL backup (gzip dumps in ./backups, 14 days retention)
+  ems-db-backup:
+    image: mysql:8.0
+    container_name: ems-db-backup
+    restart: always
+    environment:
+      MYSQL_PWD: ems_password
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      ems-db:
+        condition: service_healthy
+    networks:
+      - ems-network
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        while true; do
+          f=/backups/ems_db_$$(date +%Y%m%d_%H%M%S).sql.gz
+          if mysqldump -h ems-db -u ems_user --single-transaction --no-tablespaces ems_db | gzip > $$f; then
+            echo "EMS Backup written: $$f"
+          else
+            echo "EMS Backup FAILED" >&2
+            rm -f $$f
+          fi
+          find /backups -name 'ems_db_*.sql.gz' -mtime +14 -delete
+          sleep 86400
+        done
+
+volumes:
+  ems_mysql_data:
+  ems_uploads:
+
+networks:
+  ems-network:
+    driver: bridge
+  dvla-admin-net:
+    name: dvla-admin-net
+    driver: bridge
