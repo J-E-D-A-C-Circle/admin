@@ -32,6 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function AssetsPage() {
   const router = useRouter();
@@ -471,6 +474,23 @@ export default function AssetsPage() {
     }
   };
 
+  const renderStatusBadge = (s: string) => {
+    switch (s) {
+      case 'Active':
+        return <Badge variant="success">Active</Badge>;
+      case 'Under_Maintenance':
+        return <Badge variant="info">Under Maintenance</Badge>;
+      case 'Damaged':
+        return <Badge variant="destructive">Damaged</Badge>;
+      case 'Missing':
+        return <Badge variant="warning">Missing</Badge>;
+      case 'Disposed':
+        return <Badge variant="secondary">Disposed</Badge>;
+      default:
+        return <Badge variant="outline">{s.replace('_', ' ')}</Badge>;
+    }
+  };
+
   const getStatusColor = (s: string) => {
     switch (s) {
       case 'Active':
@@ -486,40 +506,48 @@ export default function AssetsPage() {
     }
   };
 
+  const hasActiveFilters = Boolean(search || categoryId || regionId || stationId || status);
+
+  const resetFilters = () => {
+    setSearch('');
+    setCategoryId('');
+    setRegionId('');
+    setStationId('');
+    setStatus('');
+    setPage(1);
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Asset Registry</h1>
-          <p className="text-sm text-slate-400">Search, filter, and audit all physical and hardware assets</p>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Asset Registry</h1>
+            <Badge variant="gold" className="text-xs font-semibold px-2.5 py-0.5">
+              {total.toLocaleString()} Assets
+            </Badge>
+          </div>
+          <p className="text-sm text-slate-400 mt-1">
+            Search, filter, track depreciation, and audit all physical and hardware assets
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Regional Manager') && selectedIds.length > 0 && (
-            <button
-              onClick={() => {
-                setBulkDepartmentId('');
-                setBulkStatus('');
-                setBulkError('');
-                setShowBulkEditModal(true);
-              }}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors text-center text-sm shadow-md flex items-center space-x-2"
-            >
-              <Edit className="w-4 h-4" />
-              <span>Bulk Edit ({selectedIds.length})</span>
-            </button>
-          )}
-
-          <button
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={exportCsv}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors text-center text-sm shadow-md flex items-center space-x-2"
+            className="flex items-center space-x-1.5"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5 text-slate-400" />
             <span>Export CSV</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               const urlParams = new URLSearchParams();
               if (selectedIds.length > 0) {
@@ -534,104 +562,172 @@ export default function AssetsPage() {
               }
               window.open(`/assets/print-labels?${urlParams.toString()}`, '_blank');
             }}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors text-center text-sm shadow-md flex items-center space-x-2"
+            className="flex items-center space-x-1.5"
           >
-            <QrCode className="w-4 h-4" />
+            <QrCode className="w-3.5 h-3.5 text-amber-500" />
             <span>
               {selectedIds.length > 0
-                ? `Print Labels (${selectedIds.length} Selected)`
-                : 'Print Labels (Bulk)'}
+                ? `Print Labels (${selectedIds.length})`
+                : 'Print Labels'}
             </span>
-          </button>
+          </Button>
 
           {(userRole === 'Super Admin' || userRole === 'Asset Officer') && (
-            <Link
-              href="/assets/register"
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold rounded-lg transition-colors text-center text-sm shadow-md"
-            >
-              Register Asset
+            <Link href="/assets/register">
+              <Button variant="gold" size="sm" className="font-semibold shadow-md shadow-amber-500/10">
+                + Register Asset
+              </Button>
             </Link>
           )}
         </div>
       </div>
 
+      {/* Floating / Sticky Bulk Action Dock */}
+      {selectedIds.length > 0 && (
+        <div className="sticky top-16 z-30 p-3 bg-slate-900/95 backdrop-blur-md border border-amber-500/30 rounded-xl shadow-xl shadow-amber-500/5 flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3">
+            <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="text-xs font-semibold text-slate-200">
+              <strong className="text-amber-400">{selectedIds.length}</strong> {selectedIds.length === 1 ? 'asset' : 'assets'} selected
+            </span>
+            <button
+              onClick={() => setSelectedIds(assets.map((a) => a.assetId))}
+              className="text-xs text-slate-400 hover:text-white underline underline-offset-2 transition-colors"
+            >
+              Select all on page ({assets.length})
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors ml-1"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Regional Manager') && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => {
+                  setBulkDepartmentId('');
+                  setBulkStatus('');
+                  setBulkError('');
+                  setShowBulkEditModal(true);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center space-x-1.5"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Bulk Edit</span>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const urlParams = new URLSearchParams();
+                urlParams.set('ids', selectedIds.join(','));
+                window.open(`/assets/print-labels?${urlParams.toString()}`, '_blank');
+              }}
+              className="flex items-center space-x-1.5"
+            >
+              <QrCode className="w-3.5 h-3.5 text-amber-500" />
+              <span>Print {selectedIds.length} QR</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Filter panel */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl grid grid-cols-1 md:grid-cols-5 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-            <Search className="w-4 h-4" />
-          </span>
-          <input
-            type="text"
-            placeholder="Search assets..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && loadAssets()}
-            className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg text-slate-200 text-sm placeholder-slate-600 focus:outline-none"
-          />
+      <Card className="p-4 bg-slate-900/80 border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {/* Search */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 pointer-events-none">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadAssets()}
+              className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 rounded-lg text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all"
+            />
+          </div>
+
+          {/* Category */}
+          <Select value={categoryId || 'all'} onValueChange={(val) => setCategoryId(val === 'all' ? '' : val)}>
+            <SelectTrigger className="w-full bg-slate-950/80 border-slate-800">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {lookups.categories?.map((c: any) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Region */}
+          <Select value={regionId || 'all'} onValueChange={(val) => setRegionId(val === 'all' ? '' : val)}>
+            <SelectTrigger className="w-full bg-slate-950/80 border-slate-800">
+              <SelectValue placeholder="All Regions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Regions</SelectItem>
+              {lookups.regions?.map((r: any) => (
+                <SelectItem key={r.id} value={String(r.id)}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Station */}
+          <Select value={stationId || 'all'} onValueChange={(val) => setStationId(val === 'all' ? '' : val)}>
+            <SelectTrigger className="w-full bg-slate-950/80 border-slate-800">
+              <SelectValue placeholder="All Stations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Stations</SelectItem>
+              {filteredStations.map((s: any) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Status */}
+          <Select value={status || 'all'} onValueChange={(val) => setStatus(val === 'all' ? '' : val)}>
+            <SelectTrigger className="w-full bg-slate-950/80 border-slate-800">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
+              <SelectItem value="Damaged">Damaged</SelectItem>
+              <SelectItem value="Missing">Missing</SelectItem>
+              <SelectItem value="Disposed">Disposed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Category */}
-        <Select value={categoryId || 'all'} onValueChange={(val) => setCategoryId(val === 'all' ? '' : val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {lookups.categories?.map((c: any) => (
-              <SelectItem key={c.id} value={String(c.id)}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Region */}
-        <Select value={regionId || 'all'} onValueChange={(val) => setRegionId(val === 'all' ? '' : val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="All Regions" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            {lookups.regions?.map((r: any) => (
-              <SelectItem key={r.id} value={String(r.id)}>
-                {r.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Station */}
-        <Select value={stationId || 'all'} onValueChange={(val) => setStationId(val === 'all' ? '' : val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="All Stations" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Stations</SelectItem>
-            {filteredStations.map((s: any) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Status */}
-        <Select value={status || 'all'} onValueChange={(val) => setStatus(val === 'all' ? '' : val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
-            <SelectItem value="Damaged">Damaged</SelectItem>
-            <SelectItem value="Missing">Missing</SelectItem>
-            <SelectItem value="Disposed">Disposed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        {hasActiveFilters && (
+          <div className="mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+            <span>Filtered view active</span>
+            <button
+              onClick={resetFilters}
+              className="text-amber-500 hover:text-amber-400 font-medium hover:underline transition-colors"
+            >
+              Reset all filters
+            </button>
+          </div>
+        )}
+      </Card>
 
       {/* Assets Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
@@ -640,15 +736,19 @@ export default function AssetsPage() {
             <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
           </div>
         ) : assets.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">No assets found matching filters.</div>
+          <div className="text-center py-16 text-slate-500">
+            <Package className="w-10 h-10 mx-auto mb-3 text-slate-600 opacity-60" />
+            <p className="text-sm font-medium text-slate-400">No assets found</p>
+            <p className="text-xs text-slate-600 mt-1">Try adjusting your filters or search keywords</p>
+          </div>
         ) : (
           <>
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-3 px-2">
+          <div className="md:hidden space-y-3 p-3">
             {assets.map((asset) => (
               <div 
                 key={`mobile-${asset.assetId}`}
-                className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col"
+                className="bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col hover:border-slate-700 transition-colors"
               >
                 <div 
                   className="p-3 cursor-pointer hover:bg-slate-800/30 transition-colors"
@@ -656,36 +756,34 @@ export default function AssetsPage() {
                 >
                   <div className="flex justify-between items-start mb-2.5 gap-2">
                     <div className="flex space-x-3 items-center flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <Package className="w-5 h-5 text-slate-400" />
+                      <div className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 shadow-sm text-amber-500">
+                        <Package className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-slate-200 text-sm leading-tight truncate">{asset.name}</h3>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{asset.assetId}</p>
+                        <p className="text-[10px] text-amber-400 font-mono mt-0.5">{asset.assetId}</p>
                       </div>
                     </div>
-                    <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold border rounded flex-shrink-0 ${getStatusColor(asset.status)}`}>
-                      {asset.status.replace('_', ' ')}
-                    </span>
+                    {renderStatusBadge(asset.status)}
                   </div>
                   
-                  <div className="bg-slate-950/30 rounded-lg p-2.5 grid grid-cols-2 gap-y-2 gap-x-2 text-xs mb-1">
+                  <div className="bg-slate-950/40 rounded-lg p-2.5 grid grid-cols-2 gap-y-2 gap-x-2 text-xs mb-1">
                     <div>
-                      <span className="text-slate-500 block mb-0.5">Category</span>
+                      <span className="text-slate-500 block mb-0.5 text-[10px] uppercase font-semibold">Category</span>
                       <span className="font-medium text-slate-300">{asset.categoryName}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block mb-0.5">Station</span>
+                      <span className="text-slate-500 block mb-0.5 text-[10px] uppercase font-semibold">Station</span>
                       <span className="font-medium text-slate-300">{asset.stationName}</span>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block mb-0.5">Serial</span>
-                      <span className="font-mono text-slate-300 text-[10px]">{asset.serialNumber}</span>
+                    <div className="col-span-2">
+                      <span className="text-slate-500 block mb-0.5 text-[10px] uppercase font-semibold">Serial Number</span>
+                      <span className="font-mono text-slate-300 text-xs">{asset.serialNumber}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-800 px-3 py-2.5 flex items-center justify-between bg-slate-900 mt-auto">
+                <div className="border-t border-slate-800 px-3 py-2 flex items-center justify-between bg-slate-950/20 mt-auto">
                   <label className="flex items-center space-x-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -729,9 +827,9 @@ export default function AssetsPage() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/40 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  <th className="py-4 px-4 w-12 text-center"></th>
-                  <th className="py-4 px-2 w-10 text-center">
+                <tr className="border-b border-slate-800 bg-slate-950/60 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="py-3.5 px-3 w-10 text-center"></th>
+                  <th className="py-3.5 px-2 w-10 text-center">
                     <input
                       type="checkbox"
                       checked={assets.length > 0 && selectedIds.length === assets.length}
@@ -742,26 +840,28 @@ export default function AssetsPage() {
                           setSelectedIds([]);
                         }
                       }}
-                      className="w-4 h-4 rounded border-slate-800 bg-slate-950 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0 focus:outline-none"
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0 focus:outline-none"
                     />
                   </th>
-                  <th className="py-4 px-6">Asset ID</th>
-                  <th className="py-4 px-6">Name</th>
-                  <th className="py-4 px-6">Serial Number</th>
-                  <th className="py-4 px-6">Category</th>
-                  <th className="py-4 px-6">Station</th>
-                  <th className="py-4 px-6 text-center">Status</th>
-                  <th className="py-4 px-6 text-center">Actions</th>
+                  <th className="py-3.5 px-5">Asset ID</th>
+                  <th className="py-3.5 px-5">Name</th>
+                  <th className="py-3.5 px-5">Serial Number</th>
+                  <th className="py-3.5 px-5">Category</th>
+                  <th className="py-3.5 px-5">Station</th>
+                  <th className="py-3.5 px-5 text-center">Status</th>
+                  <th className="py-3.5 px-5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-sm text-slate-200">
                 {assets.map((asset) => (
                   <React.Fragment key={asset.assetId}>
                     <tr 
-                      className="hover:bg-slate-800/30 transition-colors cursor-pointer"
+                      className={`hover:bg-slate-800/40 transition-colors cursor-pointer ${
+                        selectedIds.includes(asset.assetId) ? 'bg-amber-500/5' : ''
+                      }`}
                       onClick={() => router.push(`/assets/${asset.assetId}`)}
                     >
-                      <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => toggleRowExpand(asset.assetId)}
                           className="p-1 text-slate-500 hover:text-white rounded hover:bg-slate-800/50 transition-colors focus:outline-none"
@@ -773,7 +873,7 @@ export default function AssetsPage() {
                           )}
                         </button>
                       </td>
-                      <td className="py-4 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(asset.assetId)}
@@ -784,22 +884,16 @@ export default function AssetsPage() {
                               setSelectedIds((prev) => prev.filter((id) => id !== asset.assetId));
                             }
                           }}
-                          className="w-4 h-4 rounded border-slate-800 bg-slate-950 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0 focus:outline-none"
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0 focus:outline-none"
                         />
                       </td>
-                      <td className="py-4 px-6 font-mono font-medium text-amber-500">{asset.assetId}</td>
-                      <td className="py-4 px-6 font-medium">{asset.name}</td>
-                      <td className="py-4 px-6 text-slate-400 font-mono">{asset.serialNumber}</td>
-                      <td className="py-4 px-6 text-slate-300">{asset.categoryName}</td>
-                      <td className="py-4 px-6 text-slate-300">{asset.stationName}</td>
-                      <td className="py-4 px-6 text-center">
-                        <span
-                          className={`inline-block px-2.5 py-1 text-xs font-semibold border rounded-full ${getStatusColor(
-                            asset.status
-                          )}`}
-                        >
-                          {asset.status.replace('_', ' ')}
-                        </span>
+                      <td className="py-3.5 px-5 font-mono font-medium text-amber-400 text-xs">{asset.assetId}</td>
+                      <td className="py-3.5 px-5 font-medium">{asset.name}</td>
+                      <td className="py-3.5 px-5 text-slate-400 font-mono text-xs">{asset.serialNumber}</td>
+                      <td className="py-3.5 px-5 text-slate-300">{asset.categoryName}</td>
+                      <td className="py-3.5 px-5 text-slate-300">{asset.stationName}</td>
+                      <td className="py-3.5 px-5 text-center">
+                        {renderStatusBadge(asset.status)}
                       </td>
                       <td className="py-4 px-6 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center space-x-2">
@@ -901,25 +995,37 @@ export default function AssetsPage() {
 
         {/* Pagination controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/40">
-            <span className="text-xs text-slate-400">
-              Showing page {page} of {totalPages}
-            </span>
-            <div className="flex space-x-2">
-              <button
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-3.5 border-t border-slate-800 bg-slate-950/50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">
+                Page <span className="font-semibold text-slate-200">{page}</span> of <span className="font-semibold text-slate-200">{totalPages}</span>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-xs text-slate-400">
+                Total <span className="font-semibold text-slate-200">{total}</span> items
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                className="h-8 px-2.5"
               >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                <span>Previous</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                className="h-8 px-2.5"
               >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
           </div>
         )}
@@ -927,33 +1033,43 @@ export default function AssetsPage() {
 
       {/* Slidedown/Drawer Panel */}
       {drawerAssetId && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
           {/* Drawer backdrop close click */}
           <div className="flex-1" onClick={closeDrawer}></div>
 
-          <div className="w-full max-w-2xl h-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col">
+          <div className="w-full max-w-2xl h-full bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-950/20">
-              <div>
-                <h3 className="text-lg font-bold text-white font-mono">
-                  {drawerAsset?.assetId || 'Loading...'}
-                </h3>
-                <p className="text-xs text-slate-400">Asset Detail & Lifecycle Portal</p>
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-bold">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white font-mono">
+                      {drawerAsset?.assetId || 'Loading...'}
+                    </h3>
+                    {drawerAsset?.status && renderStatusBadge(drawerAsset.status)}
+                  </div>
+                  <p className="text-xs text-slate-400">Asset Detail & Lifecycle Portal</p>
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 {drawerAsset && (
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => window.open(`/assets/${drawerAsset.assetId}/label`, '_blank')}
                     title="Print QR Label"
-                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/20 hover:border-transparent rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
+                    className="h-8 text-xs font-semibold flex items-center space-x-1.5"
                   >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>Print Label</span>
-                  </button>
+                    <QrCode className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Print QR</span>
+                  </Button>
                 )}
                 <button
                   onClick={closeDrawer}
-                  className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1067,14 +1183,8 @@ export default function AssetsPage() {
                           <p className="text-sm font-mono text-white">{drawerAsset.serialNumber}</p>
                         </div>
                         <div className="p-4 bg-slate-950/40 rounded-lg border border-slate-800/80">
-                          <p className="text-xs text-slate-500 font-semibold uppercase">Current Status</p>
-                          <span
-                            className={`inline-block mt-1 px-2.5 py-0.5 text-xs font-semibold border rounded-full ${getStatusColor(
-                              drawerAsset.status
-                            )}`}
-                          >
-                            {drawerAsset.status.replace('_', ' ')}
-                          </span>
+                          <p className="text-xs text-slate-500 font-semibold uppercase mb-1.5">Current Status</p>
+                          <div>{renderStatusBadge(drawerAsset.status)}</div>
                         </div>
                         {drawerAsset.categoryName === 'Vehicles' && (
                           <>
@@ -1607,24 +1717,29 @@ export default function AssetsPage() {
       )}
     {/* Bulk Edit Modal */}
       {showBulkEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                <Edit className="w-5 h-5 text-indigo-400" />
-                <span>Bulk Edit {selectedIds.length} Assets</span>
-              </h2>
-              <button onClick={() => setShowBulkEditModal(false)} className="text-slate-400 hover:text-white transition-colors">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/30">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Edit className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Bulk Edit Assets</h2>
+                  <p className="text-xs text-slate-400">Updating {selectedIds.length} selected items</p>
+                </div>
+              </div>
+              <button onClick={() => setShowBulkEditModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleBulkEditSubmit} className="p-5 space-y-5">
+            <form onSubmit={handleBulkEditSubmit} className="p-5 space-y-4">
               {bulkError && (
                 <div className="p-3 bg-red-950/40 border border-red-900/50 text-red-200 rounded-lg text-sm">
                   {bulkError}
                 </div>
               )}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">Change Department</label>
                 <Select value={bulkDepartmentId} onValueChange={setBulkDepartmentId}>
                   <SelectTrigger className="w-full bg-slate-950 border-slate-800">
@@ -1639,7 +1754,7 @@ export default function AssetsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">Change Status</label>
                 <Select value={bulkStatus} onValueChange={setBulkStatus}>
                   <SelectTrigger className="w-full bg-slate-950 border-slate-800">
@@ -1652,14 +1767,24 @@ export default function AssetsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="pt-2 flex justify-end space-x-3">
-                <button type="button" onClick={() => setShowBulkEditModal(false)} className="px-4 py-2 text-slate-300 hover:text-white transition-colors text-sm font-semibold">
+              <div className="pt-3 flex justify-end space-x-2 border-t border-slate-800/80">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowBulkEditModal(false)}
+                >
                   Cancel
-                </button>
-                <button type="submit" disabled={bulkSubmitting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-500/50 text-white rounded-lg text-sm font-semibold transition-colors flex items-center">
-                  {bulkSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={bulkSubmitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {bulkSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                   Update {selectedIds.length} Assets
-                </button>
+                </Button>
               </div>
             </form>
           </div>

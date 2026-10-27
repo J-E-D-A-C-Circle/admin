@@ -30,7 +30,16 @@ export async function POST(req: NextRequest) {
       if (!payload.name || !payload.regionId) {
         return NextResponse.json({ message: 'Name and Region are required' }, { status: 400 });
       }
-      await db.insert(stations).values({ name: payload.name, regionId: parseInt(payload.regionId) });
+      await db.insert(stations).values({
+        name: payload.name,
+        regionId: parseInt(payload.regionId),
+        code: payload.code || null,
+        city: payload.city || null,
+        latitude: payload.latitude ? String(payload.latitude) : null,
+        longitude: payload.longitude ? String(payload.longitude) : null,
+        address: payload.address || null,
+        phone: payload.phone || null,
+      });
       result = { message: 'Station created successfully' };
     } else if (type === 'departments') {
       if (!payload.name) {
@@ -91,7 +100,19 @@ export async function PUT(req: NextRequest) {
       if (!payload.name || !payload.regionId) {
         return NextResponse.json({ message: 'Name and Region are required' }, { status: 400 });
       }
-      await db.update(stations).set({ name: payload.name, regionId: parseInt(payload.regionId) }).where(eq(stations.id, id));
+      await db
+        .update(stations)
+        .set({
+          name: payload.name,
+          regionId: parseInt(payload.regionId),
+          code: payload.code !== undefined ? (payload.code || null) : undefined,
+          city: payload.city !== undefined ? (payload.city || null) : undefined,
+          latitude: payload.latitude !== undefined ? (payload.latitude ? String(payload.latitude) : null) : undefined,
+          longitude: payload.longitude !== undefined ? (payload.longitude ? String(payload.longitude) : null) : undefined,
+          address: payload.address !== undefined ? (payload.address || null) : undefined,
+          phone: payload.phone !== undefined ? (payload.phone || null) : undefined,
+        })
+        .where(eq(stations.id, id));
       result = { message: 'Station updated successfully' };
     } else if (type === 'departments') {
       if (!payload.name) {

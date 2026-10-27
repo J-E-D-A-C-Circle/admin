@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -8,67 +8,102 @@ import {
   Package,
   PlusCircle,
   ArrowRightLeft,
+  FileSpreadsheet,
   ClipboardCheck,
-  FileBarChart2,
-  ShieldCheck,
+  FileText,
+  MapPin,
   Settings,
   LogOut,
-  User,
-  Menu,
-  X,
-  Sun,
-  Moon
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Layers,
+  Search,
+  History
 } from 'lucide-react';
-import { api } from '@/lib/api';
-import { useTheme } from '@/lib/theme-context';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-const SidebarLogo = ({ collapsed }: { collapsed: boolean }) => (
-  <img
-    src="/logo.png"
-    alt="DVLA DAMS"
-    className={`w-8 h-8 flex-shrink-0 ${collapsed ? '' : ''}`}
-  />
-);
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: string[];
+  badge?: string;
+}
 
+interface NavGroup {
+  group: string;
+  items: NavItem[];
+}
 
-export default function Sidebar({ onCollapseChange, mobileOpen = false, onCloseMobile }: SidebarProps) {
+const NAV_GROUPS: NavGroup[] = [
+  {
+    group: 'DASHBOARDS',
+    items: [
+      { name: 'Analytics Overview', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Geographic Map', href: '/map', icon: MapPin },
+    ],
+  },
+  {
+    group: 'ASSET OPERATIONS',
+    items: [
+      { name: 'Asset Registry', href: '/assets', icon: Package },
+      { name: 'Register Asset', href: '/assets/register', icon: PlusCircle, roles: ['Super Admin', 'Asset Officer'] },
+      { name: 'Asset Transfers', href: '/transfers', icon: ArrowRightLeft },
+      { name: 'Batch CSV Import', href: '/import', icon: FileSpreadsheet, roles: ['Super Admin', 'Asset Officer'] },
+    ],
+  },
+  {
+    group: 'AUDIT & VERIFICATION',
+    items: [
+      { name: 'Audit Trail Logs', href: '/audit-logs', icon: History, roles: ['Super Admin', 'Auditor'] },
+      { name: 'Verifications', href: '/verifications', icon: ClipboardCheck },
+      { name: 'Executive Reports', href: '/reports', icon: FileText },
+    ],
+  },
+  {
+    group: 'SYSTEM',
+    items: [
+      { name: 'Authority Settings', href: '/settings', icon: Settings, roles: ['Super Admin'] },
+      { name: 'Lookups & Taxonomy', href: '/settings/lookups', icon: Layers, roles: ['Super Admin'] },
+    ],
+  },
+];
+
+export default function Sidebar({
+  onCollapseChange,
+  mobileOpen = false,
+  onCloseMobile,
+  onOpenCommandPalette,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const { theme, toggleTheme } = useTheme();
+  const [userRole, setUserRole] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
-    // Load user profile
-    const storedUser = localStorage.getItem('dams_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      router.push('/login');
-    }
-
-    // Load notification counts
-    const fetchNotifications = async () => {
+    const u = localStorage.getItem('dams_user');
+    if (u) {
       try {
-        const notifs = await api.getNotifications();
-        const unread = notifs.filter((n: any) => !n.isRead).length;
-        setUnreadCount(unread);
-      } catch (err) {
-        console.error('Error loading notification counts:', err);
-      }
-    };
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // 30s poll
-    return () => clearInterval(interval);
-  }, [router]);
+        const parsed = JSON.parse(u);
+        setUserRole(parsed.role || '');
+        setUserName(parsed.name || parsed.username || '');
+      } catch (e) {}
+    }
+  }, []);
+
+  const toggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    onCollapseChange?.(next);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('dams_token');
@@ -76,185 +111,157 @@ export default function Sidebar({ onCollapseChange, mobileOpen = false, onCloseM
     router.push('/login');
   };
 
-  const toggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    if (onCollapseChange) onCollapseChange(next);
-  };
-
-  if (!user) return null;
-
-  const role = user.role;
-
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/dashboard',
-      visible: true
-    },
-    {
-      name: 'Asset Registry',
-      icon: Package,
-      path: '/assets',
-      visible: true
-    },
-
-    {
-      name: 'Register Asset',
-      icon: PlusCircle,
-      path: '/assets/register',
-      visible: role === 'Super Admin' || role === 'Asset Officer'
-    },
-    {
-      name: 'Asset Transfers',
-      icon: ArrowRightLeft,
-      path: '/transfers',
-      visible: role === 'Super Admin' || role === 'Regional Manager' || role === 'Asset Officer'
-    },
-    {
-      name: 'Verification Audits',
-      icon: ClipboardCheck,
-      path: '/verifications',
-      visible: role === 'Super Admin' || role === 'Asset Officer'
-    },
-    {
-      name: 'Reports & Export',
-      icon: FileBarChart2,
-      path: '/reports',
-      visible: true
-    },
-    {
-      name: 'Audit Trail',
-      icon: ShieldCheck,
-      path: '/audit-logs',
-      visible: role === 'Super Admin' || role === 'Auditor'
-    },
-    {
-      name: 'Settings',
-      icon: Settings,
-      path: '/settings',
-      visible: true
+  const isLinkActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === '/dashboard' || pathname === '/';
     }
-  ];
+    if (href === '/assets') {
+      // Highlight Asset Registry for /assets or asset detail views, but NOT sibling nav items like /assets/register or /assets/print-labels
+      return (
+        pathname === '/assets' ||
+        (pathname.startsWith('/assets/') &&
+          !pathname.startsWith('/assets/register') &&
+          !pathname.startsWith('/assets/print-labels'))
+      );
+    }
+    if (href === '/settings') {
+      // Highlight Authority Settings for /settings, but NOT child nav items like /settings/lookups
+      return (
+        pathname === '/settings' ||
+        (pathname.startsWith('/settings/') && !pathname.startsWith('/settings/lookups'))
+      );
+    }
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile Backdrop */}
       {mobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-30 md:hidden" 
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm md:hidden"
           onClick={onCloseMobile}
         />
       )}
 
+      {/* Inset Sidebar Container */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-slate-900 border-r border-slate-800 text-slate-300 flex flex-col ${
-          collapsed ? 'md:w-20' : 'md:w-64'
-        } w-64 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col bg-slate-900 border-r border-slate-800 transition-all duration-300 ${
+          collapsed ? 'w-20' : 'w-64'
+        } ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
       >
-      {/* Brand logo header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800">
-        <div className="flex items-center space-x-2 overflow-hidden">
-          <SidebarLogo collapsed={collapsed} />
-          {!collapsed && (
-            <div className="flex flex-col">
-              <span className={`text-sm font-bold leading-none ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-                DVLA DAMS
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                Official System
-              </span>
+        {/* Sidebar Header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-950/30">
+          <Link href="/dashboard" className="flex items-center space-x-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-slate-900/90 border border-slate-800 p-1 flex items-center justify-center shadow-md shadow-amber-500/10 shrink-0">
+              <img src="/logo.png" alt="DVLA Logo" className="w-full h-full object-contain" />
             </div>
-          )}
+            {!collapsed && (
+              <div className="flex flex-col">
+                <span className="font-bold text-sm tracking-tight text-white leading-tight">
+                  DVLA ASSETS
+                </span>
+                <span className="text-[10px] font-mono text-amber-400 font-semibold uppercase tracking-wider">
+                  Enterprise Suite
+                </span>
+              </div>
+            )}
+          </Link>
+          <button
+            onClick={toggleCollapse}
+            className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          >
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
-        <button
-          onClick={toggleCollapse}
-          className="hidden md:flex p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white ml-auto flex-shrink-0"
-        >
-          {collapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-        </button>
-        <button
-          onClick={onCloseMobile}
-          className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white ml-auto flex-shrink-0"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
 
-      {/* Navigation items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems
-          .filter((item) => item.visible)
-          .map((item) => {
-            const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
-            const Icon = item.icon;
-
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                      : 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/5 font-semibold'
-                    : theme === 'dark'
-                    ? 'hover:bg-slate-800 hover:text-white text-slate-300'
-                    : 'hover:bg-slate-100 hover:text-slate-900 text-slate-600'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'} flex-shrink-0`} />
-                {!collapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
-      </nav>
-
-      {/* User info & settings footer */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-        {!collapsed && (
-          <div className="flex items-center space-x-3 mb-4 p-2.5 rounded-xl bg-slate-800/30 border border-slate-700/40">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-              <User className="w-5 h-5" />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold text-slate-100 truncate leading-snug">{user.name}</p>
-              <p className="text-xs text-slate-400 truncate leading-none mt-1">{user.role}</p>
-            </div>
+        {/* Quick Search Button in Sidebar */}
+        {!collapsed && onOpenCommandPalette && (
+          <div className="px-3 pt-3">
+            <button
+              onClick={onOpenCommandPalette}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs text-slate-400 hover:text-slate-200 hover:border-slate-700 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center space-x-2">
+                <Search className="w-3.5 h-3.5 text-slate-500" />
+                <span>Search AMS...</span>
+              </div>
+              <kbd className="text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">
+                ⌘K
+              </kbd>
+            </button>
           </div>
         )}
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          className={`flex items-center w-full px-3 py-2 mb-1.5 text-sm font-medium border border-slate-700/30 dark:border-transparent text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          {theme === 'dark' ? (
-            <Sun className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'} flex-shrink-0 text-amber-400`} />
-          ) : (
-            <Moon className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'} flex-shrink-0 text-slate-500`} />
-          )}
-          {!collapsed && (
-            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-          )}
-        </button>
+        {/* Navigation Group Items */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {NAV_GROUPS.map((group) => {
+            const visibleItems = group.items.filter(
+              (item) => !item.roles || (userRole && item.roles.includes(userRole))
+            );
+            if (visibleItems.length === 0) return null;
 
-        {/* Sign Out */}
-        <button
-          onClick={handleLogout}
-          className={`flex items-center w-full px-3 py-2 text-sm font-medium border border-slate-700/30 dark:border-transparent text-slate-700 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-red-500/10 hover:text-slate-900 dark:hover:text-red-300 rounded-lg transition-colors ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          <LogOut className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'} flex-shrink-0`} />
-          {!collapsed && <span>Sign Out</span>}
-        </button>
-      </div>
-    </aside>
+            return (
+              <div key={group.group} className="space-y-1">
+                {!collapsed && (
+                  <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono mb-1.5">
+                    {group.group}
+                  </p>
+                )}
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isLinkActive(item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onCloseMobile}
+                      className={`flex items-center rounded-lg transition-all text-xs font-medium group relative ${
+                        collapsed ? 'justify-center p-2.5' : 'px-3 py-2 space-x-3'
+                      } ${
+                        active
+                          ? 'bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20 shadow-sm'
+                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      }`}
+                      title={collapsed ? item.name : undefined}
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          active ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate flex-1">{item.name}</span>}
+                      {!collapsed && item.badge && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/40">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors ${
+              collapsed ? 'justify-center p-2.5' : 'px-3 py-2 space-x-2'
+            }`}
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+        </div>
+      </aside>
     </>
   );
 }

@@ -21,7 +21,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(data);
     }
     if (type === 'stations') {
-      const query = db.select().from(stations);
+      const query = db
+        .select({
+          id: stations.id,
+          name: stations.name,
+          regionId: stations.regionId,
+          regionName: regions.name,
+          code: stations.code,
+          city: stations.city,
+          latitude: stations.latitude,
+          longitude: stations.longitude,
+          address: stations.address,
+          phone: stations.phone,
+        })
+        .from(stations)
+        .leftJoin(regions, eq(stations.regionId, regions.id));
+
       if (regionId) {
         query.where(eq(stations.regionId, parseInt(regionId)));
       }
@@ -68,7 +83,22 @@ export async function GET(req: NextRequest) {
       allRoles,
     ] = await Promise.all([
       db.select().from(regions).orderBy(regions.name),
-      db.select().from(stations).orderBy(stations.name),
+      db
+        .select({
+          id: stations.id,
+          name: stations.name,
+          regionId: stations.regionId,
+          regionName: regions.name,
+          code: stations.code,
+          city: stations.city,
+          latitude: stations.latitude,
+          longitude: stations.longitude,
+          address: stations.address,
+          phone: stations.phone,
+        })
+        .from(stations)
+        .leftJoin(regions, eq(stations.regionId, regions.id))
+        .orderBy(stations.name),
       db.select().from(departments).orderBy(departments.name),
       db.select().from(assetCategories).orderBy(assetCategories.name),
       db.select().from(assetSubcategories).orderBy(assetSubcategories.name),

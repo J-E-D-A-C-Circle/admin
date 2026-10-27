@@ -41,7 +41,16 @@ export default function LookupsManagementPage() {
   const [newCategory, setNewCategory] = useState({ name: '', code: '' });
   const [newSubcategory, setNewSubcategory] = useState({ name: '', code: '', categoryId: '' });
   const [newRegion, setNewRegion] = useState({ name: '', code: '' });
-  const [newStation, setNewStation] = useState({ name: '', regionId: '' });
+  const [newStation, setNewStation] = useState({
+    name: '',
+    regionId: '',
+    code: '',
+    city: '',
+    latitude: '',
+    longitude: '',
+    address: '',
+    phone: '',
+  });
   const [newDepartment, setNewDepartment] = useState({ name: '' });
 
   // Inline edit state
@@ -85,7 +94,16 @@ export default function LookupsManagementPage() {
       setNewCategory({ name: '', code: '' });
       setNewSubcategory({ name: '', code: '', categoryId: '' });
       setNewRegion({ name: '', code: '' });
-      setNewStation({ name: '', regionId: '' });
+      setNewStation({
+        name: '',
+        regionId: '',
+        code: '',
+        city: '',
+        latitude: '',
+        longitude: '',
+        address: '',
+        phone: '',
+      });
       setNewDepartment({ name: '' });
       // Reload lookup lists
       await loadData();
@@ -347,9 +365,108 @@ export default function LookupsManagementPage() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Tema Head Office"
+                      placeholder="e.g. Tema Regional Office"
                       value={newStation.name}
                       onChange={(e) => setNewStation((p) => ({ ...p, name: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelClass}>Station Code</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. GAR-TEM"
+                        value={newStation.code}
+                        onChange={(e) => setNewStation((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>City / District</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Tema"
+                        value={newStation.city}
+                        onChange={(e) => setNewStation((p) => ({ ...p, city: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-amber-400 flex items-center space-x-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Map Coordinates (GPS)</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400">Pointers for GIS Radar</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Latitude (N)</span>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. 5.6698"
+                          value={newStation.latitude}
+                          onChange={(e) => setNewStation((p) => ({ ...p, latitude: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-0.5">Longitude (W/E)</span>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="e.g. -0.0166"
+                          value={newStation.longitude}
+                          onChange={(e) => setNewStation((p) => ({ ...p, longitude: e.target.value }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block mb-1">Quick Ghana Presets:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { city: 'Accra', lat: 5.5898, lng: -0.1834 },
+                          { city: 'Kumasi', lat: 6.6713, lng: -1.6111 },
+                          { city: 'Takoradi', lat: 4.9016, lng: -1.7831 },
+                          { city: 'Tamale', lat: 9.4008, lng: -0.8393 },
+                          { city: 'Cape Coast', lat: 5.1054, lng: -1.2466 },
+                          { city: 'Sunyani', lat: 7.3399, lng: -2.3268 },
+                          { city: 'Ho', lat: 6.6101, lng: 0.4786 },
+                          { city: 'Bolgatanga', lat: 10.7856, lng: -0.8514 },
+                        ].map((pr) => (
+                          <button
+                            key={pr.city}
+                            type="button"
+                            onClick={() => setNewStation((p) => ({ ...p, city: pr.city, latitude: String(pr.lat), longitude: String(pr.lng) }))}
+                            className="px-1.5 py-0.5 bg-slate-900 hover:bg-slate-800 text-[10px] text-amber-300 border border-slate-800 rounded transition-colors"
+                          >
+                            {pr.city}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Physical Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Harbour Road, Community 1"
+                      value={newStation.address}
+                      onChange={(e) => setNewStation((p) => ({ ...p, address: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Contact Phone</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. +233 303 202 119"
+                      value={newStation.phone}
+                      onChange={(e) => setNewStation((p) => ({ ...p, phone: e.target.value }))}
                       className={inputClass}
                     />
                   </div>
@@ -373,7 +490,7 @@ export default function LookupsManagementPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-lg text-sm flex items-center justify-center space-x-2 transition-colors"
+                className="w-full py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-lg text-sm flex items-center justify-center space-x-2 transition-colors cursor-pointer"
               >
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Add Entry</span>
@@ -395,7 +512,12 @@ export default function LookupsManagementPage() {
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       <th className="py-3 px-4">Name</th>
-                      {activeTab !== 'departments' && <th className="py-3 px-4">{activeTab === 'stations' ? 'Region' : activeTab === 'subcategories' ? 'Category' : 'Code'}</th>}
+                      {activeTab !== 'departments' && (
+                        <th className="py-3 px-4">
+                          {activeTab === 'stations' ? 'Region & City' : activeTab === 'subcategories' ? 'Category' : 'Code'}
+                        </th>
+                      )}
+                      {activeTab === 'stations' && <th className="py-3 px-4">GPS Coordinates</th>}
                       <th className="py-3 px-4 text-right w-28">Actions</th>
                     </tr>
                   </thead>
@@ -406,35 +528,61 @@ export default function LookupsManagementPage() {
                         <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
                           <td className="py-3 px-4">
                             {isEditing ? (
-                              <input
-                                type="text"
-                                value={editPayload.name}
-                                onChange={(e) => setEditPayload((p: any) => ({ ...p, name: e.target.value }))}
-                                className="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-sm text-white focus:outline-none w-full"
-                              />
+                              <div className="space-y-1">
+                                <input
+                                  type="text"
+                                  value={editPayload.name}
+                                  placeholder="Station Name"
+                                  onChange={(e) => setEditPayload((p: any) => ({ ...p, name: e.target.value }))}
+                                  className="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-sm text-white focus:outline-none w-full"
+                                />
+                                {activeTab === 'stations' && (
+                                  <input
+                                    type="text"
+                                    value={editPayload.code || ''}
+                                    placeholder="Code (e.g. GAR-37)"
+                                    onChange={(e) => setEditPayload((p: any) => ({ ...p, code: e.target.value.toUpperCase() }))}
+                                    className="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none w-full"
+                                  />
+                                )}
+                              </div>
                             ) : (
-                              <span className="font-medium">{item.name}</span>
+                              <div>
+                                <span className="font-medium text-white block">{item.name}</span>
+                                {item.code && (
+                                  <span className="text-[10px] font-mono text-amber-400/90">{item.code}</span>
+                                )}
+                              </div>
                             )}
                           </td>
                           {activeTab !== 'departments' && (
                             <td className="py-3 px-4">
                               {isEditing ? (
                                 activeTab === 'stations' ? (
-                                  <Select
-                                    value={String(editPayload.regionId)}
-                                    onValueChange={(val) => setEditPayload((p: any) => ({ ...p, regionId: parseInt(val) }))}
-                                  >
-                                    <SelectTrigger className="h-8 py-1 px-2 rounded bg-slate-950 border-slate-800 text-xs text-white">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {lookups.regions?.map((r: any) => (
-                                        <SelectItem key={r.id} value={String(r.id)}>
-                                          {r.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <div className="space-y-1">
+                                    <Select
+                                      value={String(editPayload.regionId)}
+                                      onValueChange={(val) => setEditPayload((p: any) => ({ ...p, regionId: parseInt(val) }))}
+                                    >
+                                      <SelectTrigger className="h-7 py-0.5 px-2 rounded bg-slate-950 border-slate-800 text-xs text-white">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {lookups.regions?.map((r: any) => (
+                                          <SelectItem key={r.id} value={String(r.id)}>
+                                            {r.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <input
+                                      type="text"
+                                      placeholder="City / District"
+                                      value={editPayload.city || ''}
+                                      onChange={(e) => setEditPayload((p: any) => ({ ...p, city: e.target.value }))}
+                                      className="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none w-full"
+                                    />
+                                  </div>
                                 ) : activeTab === 'subcategories' ? (
                                   <Select
                                     value={String(editPayload.categoryId)}
@@ -460,16 +608,61 @@ export default function LookupsManagementPage() {
                                   />
                                 )
                               ) : (
-                                <span className="text-slate-400 font-mono text-xs">
-                                  {activeTab === 'stations'
-                                    ? lookups.regions?.find((r: any) => r.id === item.regionId)?.name || 'Unknown'
-                                    : activeTab === 'subcategories'
-                                    ? lookups.categories?.find((c: any) => c.id === item.categoryId)?.name || 'Unknown'
-                                    : item.code}
-                                </span>
+                                <div>
+                                  <span className="text-slate-300 text-xs block">
+                                    {activeTab === 'stations'
+                                      ? lookups.regions?.find((r: any) => r.id === item.regionId)?.name || 'Unknown'
+                                      : activeTab === 'subcategories'
+                                      ? lookups.categories?.find((c: any) => c.id === item.categoryId)?.name || 'Unknown'
+                                      : item.code}
+                                  </span>
+                                  {activeTab === 'stations' && item.city && (
+                                    <span className="text-[10px] text-slate-500">{item.city}</span>
+                                  )}
+                                </div>
                               )}
                             </td>
                           )}
+
+                          {/* Stations GPS Column */}
+                          {activeTab === 'stations' && (
+                            <td className="py-3 px-4">
+                              {isEditing ? (
+                                <div className="grid grid-cols-2 gap-1 min-w-[160px]">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    placeholder="Lat"
+                                    value={editPayload.latitude || ''}
+                                    onChange={(e) => setEditPayload((p: any) => ({ ...p, latitude: e.target.value }))}
+                                    className="px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none"
+                                  />
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    placeholder="Lng"
+                                    value={editPayload.longitude || ''}
+                                    onChange={(e) => setEditPayload((p: any) => ({ ...p, longitude: e.target.value }))}
+                                    className="px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none"
+                                  />
+                                </div>
+                              ) : item.latitude && item.longitude ? (
+                                <Link
+                                  href="/map"
+                                  className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-400 font-mono hover:bg-emerald-500/20 transition-colors"
+                                  title="View pin on Geographic Ghana Map"
+                                >
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  <span>
+                                    {parseFloat(item.latitude).toFixed(4)}°, {parseFloat(item.longitude).toFixed(4)}°
+                                  </span>
+                                </Link>
+                              ) : (
+                                <span className="text-slate-500 text-xs italic">No GPS set</span>
+                              )}
+                            </td>
+                          )}
+
                           <td className="py-3 px-4 text-right">
                             {isEditing ? (
                               <div className="flex justify-end space-x-1.5">
@@ -477,14 +670,14 @@ export default function LookupsManagementPage() {
                                   onClick={() => handleUpdate(item.id)}
                                   disabled={submitting}
                                   title="Save Changes"
-                                  className="p-1.5 text-emerald-400 hover:text-emerald-300 rounded hover:bg-emerald-500/10 transition-colors"
+                                  className="p-1.5 text-emerald-400 hover:text-emerald-300 rounded hover:bg-emerald-500/10 transition-colors cursor-pointer"
                                 >
                                   <Check className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={cancelEdit}
                                   title="Cancel"
-                                  className="p-1.5 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10 transition-colors"
+                                  className="p-1.5 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10 transition-colors cursor-pointer"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -494,14 +687,14 @@ export default function LookupsManagementPage() {
                                 <button
                                   onClick={() => startEdit(item)}
                                   title="Edit Entry"
-                                  className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                                  className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors cursor-pointer"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(item.id)}
                                   title="Delete Entry"
-                                  className="p-1.5 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10 transition-colors"
+                                  className="p-1.5 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10 transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>

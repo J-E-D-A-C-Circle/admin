@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/sidebar';
+import { AppHeader } from '@/components/app-header';
+import { CommandPalette } from '@/components/ui/command-palette';
 import { ThemeProvider } from '@/lib/theme-context';
 import { Menu } from 'lucide-react';
 
@@ -11,6 +13,7 @@ export default function LayoutClientWrapper({ children }: { children: React.Reac
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const isLoginPage = pathname === '/login';
 
   useEffect(() => {
@@ -31,36 +34,39 @@ export default function LayoutClientWrapper({ children }: { children: React.Reac
 
   return (
     <ThemeProvider>
-      <div className="flex flex-col md:flex-row h-screen print:h-auto overflow-hidden print:overflow-visible bg-slate-950 print:bg-white">
-        
-        {/* Mobile Header */}
-        <div className="md:hidden print:hidden flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900 shrink-0 relative z-30">
-          <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="DVLA DAMS" className="w-8 h-8" />
-            <span className="text-base font-bold text-white leading-none">DVLA DAMS</span>
-          </div>
-          <button onClick={() => setMobileOpen(true)} className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
+      <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+        {/* Global Keyboard-Driven Command Palette */}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
 
+        {/* Inset Sidebar */}
         <div className="print:hidden">
-          <Sidebar 
-            onCollapseChange={setCollapsed} 
-            mobileOpen={mobileOpen} 
-            onCloseMobile={() => setMobileOpen(false)} 
+          <Sidebar
+            onCollapseChange={setCollapsed}
+            mobileOpen={mobileOpen}
+            onCloseMobile={() => setMobileOpen(false)}
+            onOpenCommandPalette={() => setCommandPaletteOpen(true)}
           />
         </div>
-        
-        <main
-          className={`flex-1 overflow-y-auto print:overflow-visible p-4 sm:p-6 md:p-8 print:p-0 transition-all duration-300 ml-0 ${
+
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
             collapsed ? 'md:ml-20' : 'md:ml-64'
-          } print:ml-0`}
+          }`}
         >
-          <div className="max-w-7xl print:max-w-none mx-auto space-y-6 print:space-y-0">
-            {children}
+          {/* Top Inset Application Header */}
+          <div className="print:hidden">
+            <AppHeader onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
           </div>
-        </main>
+
+          {/* Scrollable Viewport */}
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 print:p-0">
+            <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+          </main>
+        </div>
       </div>
     </ThemeProvider>
   );

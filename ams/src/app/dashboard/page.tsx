@@ -11,7 +11,6 @@ import {
   FileMinus,
   TrendingUp,
   MapPin,
-  ListFilter,
   Loader2,
   Bell,
   Car,
@@ -21,7 +20,10 @@ import {
   QrCode,
   ArrowRightLeft,
   FileSpreadsheet,
-  X
+  X,
+  FileText,
+  PlusCircle,
+  Clock
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -33,7 +35,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
   Sector
 } from 'recharts';
 import {
@@ -43,7 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -54,13 +58,14 @@ export default function DashboardPage() {
   // Custom states for interactive charts
   const [ageCategory, setAgeCategory] = useState('all');
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(-1);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Feature 6: Overdue Verifications states
+  // Overdue Verifications states
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [overdueAssets, setOverdueAssets] = useState<any[]>([]);
   const [overdueLoading, setOverdueLoading] = useState(false);
 
-  // Feature 8: Leaderboard states
+  // Leaderboard states
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
@@ -71,7 +76,7 @@ export default function DashboardPage() {
         api.getNotifications()
       ]);
       setData(dash);
-      setNotifications(notifs.slice(0, 5)); // show top 5
+      setNotifications(notifs.slice(0, 5));
     } catch (err: any) {
       setError(err.message || 'Error loading dashboard metrics.');
     } finally {
@@ -132,71 +137,81 @@ export default function DashboardPage() {
     {
       title: 'Total Assets',
       value: kpis.total,
+      subtitle: 'Recorded inventory',
       icon: Package,
-      color: 'border-slate-800 text-white bg-slate-900/40',
-      iconColor: 'text-slate-400'
+      badge: 'All Assets',
+      variant: 'default' as const,
+      iconColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20'
     },
     {
       title: 'Active Assets',
       value: kpis.active,
+      subtitle: `${kpis.total ? ((kpis.active / kpis.total) * 100).toFixed(0) : 0}% operational`,
       icon: CheckCircle,
-      color: 'border-emerald-900/50 text-emerald-100 bg-emerald-950/20',
-      iconColor: 'text-emerald-400'
+      badge: 'In Service',
+      variant: 'success' as const,
+      iconColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
     },
     {
       title: 'Under Maintenance',
       value: kpis.underMaintenance,
+      subtitle: 'Repairs & inspection',
       icon: Wrench,
-      color: 'border-blue-900/50 text-blue-100 bg-blue-950/20',
-      iconColor: 'text-blue-400'
+      badge: 'Servicing',
+      variant: 'info' as const,
+      iconColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20'
     },
     {
       title: 'Missing Assets',
       value: kpis.missing,
+      subtitle: 'Unaccounted units',
       icon: AlertTriangle,
-      color: 'border-amber-900/50 text-amber-100 bg-amber-950/20',
-      iconColor: 'text-amber-400'
+      badge: 'Attention',
+      variant: 'warning' as const,
+      iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
     },
     {
       title: 'Damaged Assets',
       value: kpis.damaged,
+      subtitle: 'Decommission candidates',
       icon: FileMinus,
-      color: 'border-red-900/50 text-red-100 bg-red-950/20',
-      iconColor: 'text-red-400'
+      badge: 'Critical',
+      variant: 'destructive' as const,
+      iconColor: 'text-red-400 bg-red-500/10 border-red-500/20'
     },
     {
-      title: 'Verification Reminders',
+      title: 'Audit Reminders',
       value: kpis.overdueVerifications,
+      subtitle: 'Pending >90 days',
       icon: ClipboardCheck,
-      color: kpis.overdueVerifications > 0
-        ? 'border-rose-900/50 text-rose-100 bg-rose-950/20 hover:scale-[1.02] cursor-pointer transition-all duration-200'
-        : 'border-slate-800 text-slate-300 bg-slate-900/40',
-      iconColor: kpis.overdueVerifications > 0 ? 'text-rose-400' : 'text-slate-400',
+      badge: kpis.overdueVerifications > 0 ? 'Overdue' : 'Compliant',
+      variant: kpis.overdueVerifications > 0 ? ('destructive' as const) : ('secondary' as const),
+      iconColor: kpis.overdueVerifications > 0 ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-slate-400 bg-slate-800 border-slate-700',
       onClick: kpis.overdueVerifications > 0 ? openOverdueModal : undefined
     }
   ];
 
   const fleetKpiCards = [
     {
-      title: 'Total Fleet',
-      value: kpis.totalVehicles,
+      title: 'Total Fleet Units',
+      value: kpis.totalVehicles ?? 0,
+      subtitle: 'Registered government vehicles',
       icon: Car,
-      color: 'border-teal-900/50 text-teal-100 bg-teal-950/20',
-      iconColor: 'text-teal-400'
+      iconColor: 'text-teal-400 bg-teal-500/10 border-teal-500/20'
     },
     {
-      title: 'Active Fleet',
-      value: kpis.vehiclesActive,
+      title: 'Active In-Field',
+      value: kpis.vehiclesActive ?? 0,
+      subtitle: 'Operational transport',
       icon: ShieldCheck,
-      color: 'border-emerald-900/50 text-emerald-100 bg-emerald-950/20',
-      iconColor: 'text-emerald-400'
+      iconColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
     },
     {
-      title: 'Fleet in Maintenance',
-      value: kpis.vehiclesMaintenance,
+      title: 'Under Maintenance',
+      value: kpis.vehiclesMaintenance ?? 0,
+      subtitle: 'Garage or workshop repairs',
       icon: Wrench,
-      color: 'border-orange-900/50 text-orange-100 bg-orange-950/20',
-      iconColor: 'text-orange-400'
+      iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
     },
   ];
 
@@ -234,24 +249,24 @@ export default function DashboardPage() {
 
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const index = charts.assetsByCategory?.findIndex((c: any) => c.name === data.name) ?? -1;
+      const pData = payload[0].payload;
+      const index = charts.assetsByCategory?.findIndex((c: any) => c.name === pData.name) ?? -1;
       const color = payload[0].color || (index >= 0 ? COLORS[index % COLORS.length] : '#f59e0b');
-      const pct = totalCategoryAssets > 0 ? ((data.value / totalCategoryAssets) * 100).toFixed(1) : '0';
+      const pct = totalCategoryAssets > 0 ? ((pData.value / totalCategoryAssets) * 100).toFixed(1) : '0';
       return (
         <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg shadow-xl text-xs space-y-1.5 min-w-[140px] pointer-events-none">
           <div className="flex items-center space-x-2">
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-            <span className="font-bold text-white">{data.name}</span>
+            <span className="font-bold text-white">{pData.name}</span>
           </div>
           <div className="border-t border-slate-800/80 my-1.5" />
           <div className="flex items-center justify-between space-x-6 text-[11px]">
             <span className="text-slate-400">Total Count:</span>
-            <span className="font-mono font-bold text-slate-200">{data.value}</span>
+            <span className="font-mono font-bold text-slate-200">{pData.value}</span>
           </div>
           <div className="flex items-center justify-between space-x-6 text-[11px]">
             <span className="text-slate-400">Share:</span>
-            <span className="font-mono font-bold text-emerald-450">{pct}%</span>
+            <span className="font-mono font-bold text-emerald-400">{pct}%</span>
           </div>
         </div>
       );
@@ -259,348 +274,425 @@ export default function DashboardPage() {
     return null;
   };
 
-
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
-        <p className="text-sm text-slate-400">National DVLA Asset Distribution & Audit Health Metrics</p>
-      </div>
-
-      {/* Quick Action Hub */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/verifications" className="group p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-700 hover:bg-slate-800/50 flex items-center space-x-4 transition-all">
-          <div className="p-3 bg-slate-950 border border-slate-800 text-indigo-400 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-            <QrCode className="w-5 h-5" />
+      {/* Top Header & Quick Actions */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              Executive Dashboard
+            </h1>
+            <Badge variant="gold" className="text-xs font-semibold px-2.5 py-0.5">
+              Live Assets
+            </Badge>
           </div>
-          <div>
-            <h3 className="text-slate-200 font-medium text-sm">Scan & Verify</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Audit asset conditions rapidly</p>
-          </div>
-        </Link>
-        <Link href="/transfers" className="group p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-700 hover:bg-slate-800/50 flex items-center space-x-4 transition-all">
-          <div className="p-3 bg-slate-950 border border-slate-800 text-amber-500 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-            <ArrowRightLeft className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-slate-200 font-medium text-sm">Asset Transfers</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Initiate or approve moves</p>
-          </div>
-        </Link>
-        <Link href="/assets" className="group p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-700 hover:bg-slate-800/50 flex items-center space-x-4 transition-all">
-          <div className="p-3 bg-slate-950 border border-slate-800 text-emerald-500 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-            <FileSpreadsheet className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-slate-200 font-medium text-sm">Batch Edit & Export</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Manage the full registry</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {kpiCards.map((kpi, idx) => {
-          const Icon = kpi.icon;
-          return (
-            <div
-              key={idx}
-              onClick={kpi.onClick}
-              className={`p-5 border rounded-xl flex items-center justify-between shadow-sm select-none ${kpi.color}`}
-            >
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{kpi.title}</p>
-                <h3 className="text-2xl font-black">{kpi.value ?? '—'}</h3>
-              </div>
-              <div className={`p-2.5 rounded-lg bg-slate-950/40 ${kpi.iconColor}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Fleet Analytics Row */}
-      <div>
-        <div className="flex items-center space-x-2 mb-3">
-          <Car className="w-4 h-4 text-teal-400" />
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Fleet Analytics</h2>
+          <p className="text-sm text-slate-400 mt-1">
+            National DVLA Asset Distribution & Audit Health Metrics
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {fleetKpiCards.map((kpi, idx) => {
-            const Icon = kpi.icon;
-            return (
-              <div
-                key={idx}
-                className={`p-5 border rounded-xl flex items-center justify-between shadow-sm ${kpi.color}`}
-              >
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{kpi.title}</p>
-                  <h3 className="text-3xl font-bold">{kpi.value ?? '—'}</h3>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/assets/register">
+            <Button variant="gold" size="sm" className="shadow-md shadow-amber-500/10">
+              <PlusCircle className="w-4 h-4 mr-1.5" />
+              <span>Register Asset</span>
+            </Button>
+          </Link>
+          <Link href="/verifications">
+            <Button variant="outline" size="sm">
+              <QrCode className="w-4 h-4 mr-1.5 text-amber-500" />
+              <span>Audit Scanner</span>
+            </Button>
+          </Link>
+          <Link href="/reports">
+            <Button variant="secondary" size="sm">
+              <FileText className="w-4 h-4 mr-1.5 text-slate-300" />
+              <span>Export Reports</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="overview">Overview KPIs</TabsTrigger>
+          <TabsTrigger value="regional">Regional Map & Categories</TabsTrigger>
+          <TabsTrigger value="age">Age & Depreciation</TabsTrigger>
+          <TabsTrigger value="activity">Leaderboard & Alerts</TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Overview KPIs */}
+        <TabsContent value="overview" className="space-y-6 mt-0">
+          {/* Main 6 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+            {kpiCards.map((kpi, idx) => {
+              const Icon = kpi.icon;
+              return (
+                <Card
+                  key={idx}
+                  onClick={kpi.onClick}
+                  className={`p-4 flex flex-col justify-between ${
+                    kpi.onClick ? 'cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/80' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className={`p-2 rounded-lg border ${kpi.iconColor}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <Badge variant={kpi.variant} className="text-[10px] px-1.5 py-0">
+                      {kpi.badge}
+                    </Badge>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-xs font-medium text-slate-400">{kpi.title}</p>
+                    <h3 className="text-2xl font-bold text-white font-mono mt-0.5">
+                      {kpi.value?.toLocaleString() ?? '—'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-1">{kpi.subtitle}</p>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Quick Action Navigation Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <Link href="/verifications">
+              <Card className="p-4 hover:border-slate-700 hover:bg-slate-800/50 transition-all flex items-center space-x-3.5 group">
+                <div className="p-2.5 bg-slate-950 border border-slate-800 text-indigo-400 rounded-lg group-hover:scale-105 transition-transform">
+                  <QrCode className="w-5 h-5" />
                 </div>
-                <div className={`p-3 rounded-lg bg-slate-950/40 ${kpi.iconColor}`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {/* Charts section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Assets by Region */}
-        <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white">Assets by Region</h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.assetsByRegion}>
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                  labelStyle={{ color: '#fff' }}
-                />
-                <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Asset Age & Category Stacked Bar Chart */}
-        {(() => {
-          const ageChartData = charts.assetsByAge?.map((bucket: any) => {
-            let total = 0;
-            charts.categoriesList?.forEach((cat: string) => {
-              total += bucket[cat] || 0;
-            });
-            return {
-              ...bucket,
-              total,
-            };
-          }) || [];
-
-          const getAgeBarColor = () => {
-            if (ageCategory === 'all') return '#f59e0b';
-            const index = charts.categoriesList?.indexOf(ageCategory) ?? -1;
-            return index >= 0 ? COLORS[index % COLORS.length] : '#f59e0b';
-          };
-
-          return (
-            <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 lg:col-span-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Asset Age Distribution</h3>
-                  <p className="text-xs text-slate-400 font-medium">Total present assets grouped into depreciation age buckets</p>
+                  <h3 className="text-sm font-semibold text-slate-200">Scan & Verify</h3>
+                  <p className="text-xs text-slate-400">Rapid audit physical asset barcode scanner</p>
                 </div>
-                <div className="w-full sm:w-48 flex-shrink-0">
-                  <Select value={ageCategory} onValueChange={setAgeCategory}>
-                    <SelectTrigger className="w-full h-9 bg-slate-950 border-slate-850">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {charts.categoriesList?.map((cat: string) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              </Card>
+            </Link>
+            <Link href="/transfers">
+              <Card className="p-4 hover:border-slate-700 hover:bg-slate-800/50 transition-all flex items-center space-x-3.5 group">
+                <div className="p-2.5 bg-slate-950 border border-slate-800 text-amber-500 rounded-lg group-hover:scale-105 transition-transform">
+                  <ArrowRightLeft className="w-5 h-5" />
                 </div>
-              </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ageChartData}>
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Bar
-                      dataKey={ageCategory === 'all' ? 'total' : ageCategory}
-                      fill={getAgeBarColor()}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          );
-        })()}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">Asset Transfers</h3>
+                  <p className="text-xs text-slate-400">Inter-station transfers and custodian handovers</p>
+                </div>
+              </Card>
+            </Link>
+            <Link href="/assets">
+              <Card className="p-4 hover:border-slate-700 hover:bg-slate-800/50 transition-all flex items-center space-x-3.5 group">
+                <div className="p-2.5 bg-slate-950 border border-slate-800 text-emerald-400 rounded-lg group-hover:scale-105 transition-transform">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">Registry & Bulk Actions</h3>
+                  <p className="text-xs text-slate-400">Browse inventory, batch edit, and export</p>
+                </div>
+              </Card>
+            </Link>
+          </div>
 
-        {/* Assets by Category */}
-        <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-          <h3 className="text-lg font-semibold text-white">Assets by Category</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-            {/* Donut Chart */}
-            <div className="sm:col-span-6 relative h-64 flex items-center justify-center">
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                <span className="text-3xl font-black text-white font-mono leading-none">{totalCategoryAssets}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1.5">Total Assets</span>
+          {/* Fleet Overview */}
+          <Card className="p-5">
+            <CardHeader className="p-0 pb-4 border-b border-slate-800/60 mb-4">
+              <div className="flex items-center space-x-2">
+                <Car className="w-4 h-4 text-teal-400" />
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-300">
+                  Fleet & Transport Analytics
+                </CardTitle>
               </div>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    activeIndex={activeCategoryIndex}
-                    activeShape={renderActiveShape}
-                    data={charts.assetsByCategory}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={65}
-                    outerRadius={85}
-                    dataKey="value"
-                    onMouseEnter={(_, index) => setActiveCategoryIndex(index)}
-                    onMouseLeave={() => setActiveCategoryIndex(-1)}
-                  >
-                    {charts.assetsByCategory?.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomPieTooltip />} wrapperStyle={{ zIndex: 50 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            {/* Custom Legend */}
-            <div className="sm:col-span-6 space-y-2.5 max-h-64 overflow-y-auto pr-1.5 scrollbar-thin">
-              {charts.assetsByCategory?.map((entry: any, index: number) => {
-                const color = COLORS[index % COLORS.length];
-                const pct = totalCategoryAssets > 0 ? ((entry.value / totalCategoryAssets) * 100).toFixed(1) : '0.0';
-                const isActive = activeCategoryIndex === index;
+            </CardHeader>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {fleetKpiCards.map((kpi, idx) => {
+                const Icon = kpi.icon;
                 return (
                   <div
-                    key={entry.name}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border transition-all duration-200 cursor-pointer ${
-                      isActive
-                        ? 'bg-slate-800 border-slate-700 scale-[1.02] shadow-md'
-                        : 'bg-slate-950/20 border-transparent hover:bg-slate-800/40'
-                    }`}
-                    onMouseEnter={() => setActiveCategoryIndex(index)}
-                    onMouseLeave={() => setActiveCategoryIndex(-1)}
+                    key={idx}
+                    className="p-4 rounded-xl border border-slate-800/80 bg-slate-950/40 flex items-center justify-between"
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-xs font-semibold text-slate-200 truncate">{entry.name}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                        {kpi.title}
+                      </p>
+                      <h4 className="text-2xl font-bold text-white font-mono mt-1">
+                        {kpi.value.toLocaleString()}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{kpi.subtitle}</p>
                     </div>
-                    <div className="flex items-center space-x-2.5 text-right flex-shrink-0">
-                      <span className="text-xs font-bold text-slate-100 font-mono">{entry.value}</span>
-                      <span className="text-[10px] text-slate-500 font-semibold font-mono">{pct}%</span>
+                    <div className={`p-3 rounded-lg border ${kpi.iconColor}`}>
+                      <Icon className="w-5 h-5" />
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
+          </Card>
+        </TabsContent>
 
-        {/* Assets by Status */}
-        <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-          <h3 className="text-lg font-semibold text-white">Asset Status Breakdown</h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.assetsByStatus}>
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                  labelStyle={{ color: '#fff' }}
-                />
-                <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {/* Tab 2: Regional Map & Categories */}
+        <TabsContent value="regional" className="space-y-6 mt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Assets by Region */}
+            <Card className="p-5">
+              <CardHeader className="p-0 pb-3 border-none">
+                <CardTitle>Regional Distribution</CardTitle>
+                <CardDescription>Asset distribution across DVLA Regional Operational Directorates</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 pt-3">
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={charts.assetsByRegion}>
+                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                        labelStyle={{ color: '#fff' }}
+                      />
+                      <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Recent Notifications & Top Contributors Leaderboard Split Panel */}
-        <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 lg:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Assets by Category */}
+            <Card className="p-5">
+              <CardHeader className="p-0 pb-3 border-none">
+                <CardTitle>Assets by Category</CardTitle>
+                <CardDescription>Inventory breakdown by equipment classification</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+                  <div className="sm:col-span-6 relative h-64 flex items-center justify-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                      <span className="text-3xl font-black text-white font-mono leading-none">{totalCategoryAssets}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1.5">Total Assets</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          activeIndex={activeCategoryIndex}
+                          activeShape={renderActiveShape}
+                          data={charts.assetsByCategory}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={65}
+                          outerRadius={85}
+                          dataKey="value"
+                          onMouseEnter={(_, index) => setActiveCategoryIndex(index)}
+                          onMouseLeave={() => setActiveCategoryIndex(-1)}
+                        >
+                          {charts.assetsByCategory?.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomPieTooltip />} wrapperStyle={{ zIndex: 50 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="sm:col-span-6 space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {charts.assetsByCategory?.map((entry: any, index: number) => {
+                      const color = COLORS[index % COLORS.length];
+                      const pct = totalCategoryAssets > 0 ? ((entry.value / totalCategoryAssets) * 100).toFixed(1) : '0.0';
+                      const isActive = activeCategoryIndex === index;
+                      return (
+                        <div
+                          key={entry.name}
+                          className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-150 cursor-pointer ${
+                            isActive
+                              ? 'bg-slate-800 border-slate-700 shadow-md'
+                              : 'bg-slate-950/20 border-transparent hover:bg-slate-800/40'
+                          }`}
+                          onMouseEnter={() => setActiveCategoryIndex(index)}
+                          onMouseLeave={() => setActiveCategoryIndex(-1)}
+                        >
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                            <span className="text-xs font-medium text-slate-200 truncate">{entry.name}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-right shrink-0">
+                            <span className="text-xs font-bold text-slate-100 font-mono">{entry.value}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">{pct}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: Age & Depreciation */}
+        <TabsContent value="age" className="space-y-6 mt-0">
+          <Card className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/80 pb-4">
+              <div>
+                <CardTitle>Asset Age Distribution & Depreciation</CardTitle>
+                <CardDescription>Present active assets grouped into replacement age buckets</CardDescription>
+              </div>
+              <div className="w-full sm:w-52 shrink-0">
+                <Select value={ageCategory} onValueChange={setAgeCategory}>
+                  <SelectTrigger className="w-full h-9 bg-slate-950 border-slate-800">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {charts.categoriesList?.map((cat: string) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <CardContent className="p-0 pt-4">
+              {(() => {
+                const ageChartData = charts.assetsByAge?.map((bucket: any) => {
+                  let total = 0;
+                  charts.categoriesList?.forEach((cat: string) => {
+                    total += bucket[cat] || 0;
+                  });
+                  return { ...bucket, total };
+                }) || [];
+
+                const getAgeBarColor = () => {
+                  if (ageCategory === 'all') return '#f59e0b';
+                  const index = charts.categoriesList?.indexOf(ageCategory) ?? -1;
+                  return index >= 0 ? COLORS[index % COLORS.length] : '#f59e0b';
+                };
+
+                return (
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={ageChartData}>
+                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                          labelStyle={{ color: '#fff' }}
+                        />
+                        <Bar
+                          dataKey={ageCategory === 'all' ? 'total' : ageCategory}
+                          fill={getAgeBarColor()}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 4: Activity & Alerts */}
+        <TabsContent value="activity" className="space-y-6 mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* System Alerts */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                <Bell className="w-4 h-4 text-amber-500" />
-                <span>System Alerts</span>
-              </h3>
-              <div className="space-y-3">
+            <Card className="p-5">
+              <CardHeader className="p-0 pb-3 border-none">
+                <div className="flex items-center space-x-2">
+                  <Bell className="w-4 h-4 text-amber-500" />
+                  <CardTitle>System Notifications</CardTitle>
+                </div>
+                <CardDescription>Recent automated audit alerts and transfer requests</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 pt-2 space-y-2.5">
                 {notifications.length === 0 ? (
-                  <p className="text-sm text-slate-500 py-4 text-center">No recent alerts</p>
+                  <p className="text-xs text-slate-500 py-6 text-center">No recent alerts logged.</p>
                 ) : (
                   notifications.map((notif) => (
                     <div
                       key={notif.id}
                       className={`flex items-start space-x-3 p-3 rounded-lg border text-xs ${
                         notif.isRead
-                          ? 'bg-slate-950/40 border-slate-800/80 text-slate-400'
+                          ? 'bg-slate-950/40 border-slate-800/60 text-slate-400'
                           : 'bg-slate-950/80 border-slate-800 text-slate-200 font-medium'
                       }`}
                     >
-                      <div className="mt-0.5 text-amber-500">
-                        <Bell className="w-3.5 h-3.5" />
-                      </div>
+                      <Bell className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
                       <div className="flex-1 overflow-hidden">
-                        <p className="break-words">{notif.message}</p>
-                        <span className="text-[9px] text-slate-500 block mt-1">
-                          {new Date(notif.createdAt).toLocaleDateString()} {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <p className="break-words leading-relaxed">{notif.message}</p>
+                        <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(notif.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   ))
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Top Contributors Leaderboard */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <span>Top Contributors</span>
-              </h3>
-              {leaderboardLoading ? (
-                <div className="flex h-48 items-center justify-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+            {/* Activity Leaderboard */}
+            <Card className="p-5">
+              <CardHeader className="p-0 pb-3 border-none">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  <CardTitle>Top Activity Officers</CardTitle>
                 </div>
-              ) : leaderboard.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4 text-center">No activity logged yet</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-[11px] border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase">
-                        <th className="py-2 px-1 text-center w-8">Rank</th>
-                        <th className="py-2 px-2">User</th>
-                        <th className="py-2 px-2">Role</th>
-                        <th className="py-2 px-2 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-200">
-                      {leaderboard.map((user, index) => (
-                        <tr key={user.userId} className="hover:bg-slate-800/20 transition-colors">
-                          <td className="py-2.5 px-1 text-center font-bold text-slate-500">#{index + 1}</td>
-                          <td className="py-2.5 px-2">
-                            <div className="font-semibold text-slate-100">{user.name}</div>
-                            <div className="text-[10px] text-slate-500">{user.stationName || 'National Head Office'}</div>
-                          </td>
-                          <td className="py-2.5 px-2 text-slate-400">{user.role}</td>
-                          <td className="py-2.5 px-2 text-right font-mono font-bold text-emerald-450">{user.actionCount}</td>
+                <CardDescription>Most active staff members logging verifications and audits</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 pt-2">
+                {leaderboardLoading ? (
+                  <div className="flex h-48 items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center">No activity recorded yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
+                          <th className="py-2 px-1 text-center w-8">Rank</th>
+                          <th className="py-2 px-2">Officer</th>
+                          <th className="py-2 px-2">Role</th>
+                          <th className="py-2 px-2 text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                        {leaderboard.map((user, index) => (
+                          <tr key={user.userId} className="hover:bg-slate-800/20 transition-colors">
+                            <td className="py-2.5 px-1 text-center font-bold text-slate-500">#{index + 1}</td>
+                            <td className="py-2.5 px-2">
+                              <div className="font-semibold text-slate-100">{user.name}</div>
+                              <div className="text-[10px] text-slate-500">{user.stationName || 'National Head Office'}</div>
+                            </td>
+                            <td className="py-2.5 px-2">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {user.role}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-2 text-right font-mono font-bold text-emerald-400">
+                              {user.actionCount}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Overdue Verifications Modal */}
       {showOverdueModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
           <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/20">
               <div className="flex items-center space-x-2 text-rose-400">
                 <AlertTriangle className="w-5 h-5" />
-                <h2 className="text-lg font-bold text-white">Overdue Verification Audits</h2>
+                <h2 className="text-base font-bold text-white">Overdue Verification Audits</h2>
               </div>
               <button
                 type="button"
@@ -613,7 +705,7 @@ export default function DashboardPage() {
             
             <div className="p-6 overflow-y-auto flex-1">
               <p className="text-xs text-slate-400 mb-4">
-                The following assets have not been verified in the past 90 days. Click the close button and navigate to Asset Registry to log an audit verification.
+                The following assets have not been verified in the past 90 days. Click close and navigate to Asset Registry to log an audit verification.
               </p>
               {overdueLoading ? (
                 <div className="flex h-32 items-center justify-center">
@@ -622,7 +714,7 @@ export default function DashboardPage() {
               ) : overdueAssets.length === 0 ? (
                 <p className="text-sm text-slate-500 py-8 text-center">No overdue verifications found.</p>
               ) : (
-                <div className="overflow-x-auto border border-slate-850 rounded-lg">
+                <div className="overflow-x-auto border border-slate-800 rounded-lg">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 font-semibold uppercase">
@@ -633,7 +725,7 @@ export default function DashboardPage() {
                         <th className="py-3 px-4 text-right">Days Overdue</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-850 text-slate-350">
+                    <tbody className="divide-y divide-slate-800 text-slate-300">
                       {overdueAssets.map((asset) => (
                         <tr key={asset.assetId} className="hover:bg-slate-800/10">
                           <td className="py-3 px-4 font-mono font-bold text-rose-400">{asset.assetId}</td>
@@ -650,13 +742,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-4 border-t border-slate-800 bg-slate-950/20 flex justify-end">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowOverdueModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors"
               >
                 Close Window
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -664,4 +756,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

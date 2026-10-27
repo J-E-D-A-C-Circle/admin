@@ -7,6 +7,7 @@ import {
   datetime,
   boolean,
   mysqlEnum,
+  decimal,
 } from 'drizzle-orm/mysql-core';
 
 export const roles = mysqlTable('roles', {
@@ -25,6 +26,12 @@ export const stations = mysqlTable('stations', {
   id: int('id').primaryKey().autoincrement(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   regionId: int('region_id').notNull().references(() => regions.id),
+  code: varchar('code', { length: 20 }),
+  city: varchar('city', { length: 150 }),
+  latitude: decimal('latitude', { precision: 10, scale: 6 }),
+  longitude: decimal('longitude', { precision: 10, scale: 6 }),
+  address: varchar('address', { length: 255 }),
+  phone: varchar('phone', { length: 50 }),
 });
 
 export const departments = mysqlTable('departments', {

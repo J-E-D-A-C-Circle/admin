@@ -312,3 +312,39 @@ html.light .recharts-default-tooltip .recharts-tooltip-item,
 html.light .recharts-default-tooltip .recharts-tooltip-label {
   color: #0f172a !important;
 }
+
+/* Leaflet Dark Enterprise Theme Overrides */
+.leaflet-container {
+  background-color: #020617 !important;
+  font-family: inherit !important;
+}
+
+.leaflet-tooltip.bg-slate-900\/95,
+.leaflet-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(51, 65, 85, 0.8) !important;
+  border-radius: 8px !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  border-top-color: rgba(15, 23, 42, 0.95) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(2, 6, 23, 0.75) !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  backdrop-filter: blur(4px) !important;
+  border-top-left-radius: 6px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
