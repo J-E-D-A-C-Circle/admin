@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Calendar, AlertTriangle, Sun, Moon, Menu } from 'lucide-react';
 import { FleetProvider, useFleet } from '../context/FleetContext';
 import Sidebar from './Sidebar';
@@ -163,6 +163,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isLoginPage = pathname === '/login';
+  const [authed, setAuthed] = React.useState(false);
+
+  useEffect(() => {
+    const hasSession = !!localStorage.getItem('fleet_token');
+    if (!hasSession && !isLoginPage) {
+      router.replace('/login');
+    } else {
+      setAuthed(hasSession);
+    }
+  }, [pathname, isLoginPage, router]);
+
+  if (isLoginPage) return <>{children}</>;
+  if (!authed) return null;
+
   return (
     <FleetProvider>
       <MainLayout>{children}</MainLayout>

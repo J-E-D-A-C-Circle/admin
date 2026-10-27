@@ -47,6 +47,8 @@ import {
 import { EMS_PURPOSES, formatGHS, toDateInputValue } from '@/lib/ems-constants';
 import EmsSidebar from '@/components/ems/EmsSidebar';
 import EmsHeader from '@/components/ems/EmsHeader';
+import StationsView from '@/components/ems/StationsView';
+import UsersView from '@/components/ems/UsersView';
 
 interface DispatchItem {
   id: number;
@@ -140,7 +142,7 @@ export default function EmsPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'registry' | 'returns' | 'reports' | 'compliance' | 'audit'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'registry' | 'returns' | 'reports' | 'compliance' | 'stations' | 'users' | 'audit'>('dashboard');
 
   // Dispatches state
   const [dispatches, setDispatches] = useState<DispatchItem[]>([]);
@@ -1304,18 +1306,6 @@ export default function EmsPage() {
                                   Approve HQ
                                 </button>
                               )}
-                              {isDirectorOrAdmin && ret.status === 'Approved' && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedReturn(ret);
-                                    setUnlockModalOpen(true);
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-2xs inline-flex items-center gap-1"
-                                >
-                                  <Unlock className="w-3 h-3 text-white" />
-                                  <span>Unlock</span>
-                                </button>
-                              )}
                             </td>
                           </tr>
                         ))
@@ -1702,6 +1692,10 @@ export default function EmsPage() {
           {/* ══════════════════════════════════════════════════════════
               VIEW 6: AUDIT TRAIL (Tamper-Proof Logs - SRS 4.6)
              ══════════════════════════════════════════════════════════ */}
+          {activeView === 'stations' && <StationsView />}
+
+          {activeView === 'users' && <UsersView />}
+
           {activeView === 'audit' && (
             <div className="space-y-4">
               <div className="p-4 bg-white fintech-card rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3">
@@ -2100,47 +2094,6 @@ export default function EmsPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── Modal: Unlock Return (Director Reason Modal) ── */}
-      {unlockModalOpen && selectedReturn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <form onSubmit={handleUnlockReturn} className="bg-white border border-zinc-200/80 rounded-3xl shadow-xl w-full max-w-md shadow-2xl p-6 space-y-4">
-            <h3 className="font-black text-sm text-zinc-950">Director HQ: Unlock Return</h3>
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              Unlocking return for <span className="font-bold text-zinc-950">{selectedReturn.stationName}</span> ({selectedReturn.year}-{String(selectedReturn.month).padStart(2, '0')}). Mandatory justification is required for the permanent audit trail.
-            </p>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Reason / Justification for Unlocking</label>
-              <textarea
-                value={unlockReason}
-                onChange={(e) => setUnlockReason(e.target.value)}
-                placeholder="Station officer requested amendment to receipt voucher amount..."
-                className="w-full bg-zinc-50/70 border border-zinc-200 rounded-xl p-2.5 text-xs text-zinc-950 outline-none"
-                rows={3}
-                required
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setUnlockModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || !unlockReason.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs disabled:opacity-50"
-              >
-                Unlock &amp; Notify Station
-              </button>
-            </div>
-          </form>
         </div>
       )}
 

@@ -53,10 +53,9 @@ All demo accounts have password: **`password123`**
 | **EMS Admin Officer (Accra)**| `ems_officer_accra` | Accra 37 Station | Same for Greater Accra office |
 | **EMS Station Manager** | `ems_mgr` | Kumasi Station | Verifies or rejects dispatches with mandatory reasons |
 | **EMS Station Manager (Accra)** | `ems_mgr_accra` | Accra 37 Station | Same for Greater Accra Station |
-| **EMS Director HQ** | `ems_director` | National HQ | National oversight, approves returns, unlocks returns, full reports |
-| **EMS IT Admin** | `ems_it` | National HQ | Creates users, assigns offices, handles backups. Zero edit on money |
+| **EMS Director HQ** | `ems_director` | National HQ | National oversight, approves returns, creates user accounts & stations, full reports |
 | **EMS Finance / Audit** | `ems_audit` | National HQ | View-only audit and expenditure reports |
-| **Super Administrator** | `admin` | Full Root | Unrestricted master control across all offices & roles |
+| **Super Administrator** | `admin` | Full Root | Master control; only role with authority to unlock finalized returns |
 
 ---
 

@@ -2,13 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Lock, User as UserIcon, Loader2 } from 'lucide-react';
+import {
+  Lock,
+  User as UserIcon,
+  ArrowRight,
+  Loader2,
+  Eye,
+  EyeOff,
+  Boxes,
+  KeyRound,
+  CheckCircle2,
+} from 'lucide-react';
 import { api } from '@/lib/api';
+import './login.css';
+
+const DEMO_PASSWORD = 'password123';
+
+const DEMO_ACCOUNTS = [
+  { username: 'admin', role: 'System Administrator' },
+  { username: 'rm_accra', role: 'Regional Manager' },
+  { username: 'sm_tema', role: 'Station Manager' },
+  { username: 'officer', role: 'Asset Officer' },
+  { username: 'auditor', role: 'Auditor' },
+];
+
+const FEATURES = ['Asset Register', 'Transfers', 'Verifications', 'Audit Trail'];
 
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,13 +42,12 @@ export default function LoginPage() {
     localStorage.removeItem('dams_user');
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signIn = async (user: string, pass: string) => {
     setLoading(true);
     setError('');
 
     try {
-      const res = await api.login({ username, password });
+      const res = await api.login({ username: user, password: pass });
       localStorage.setItem('dams_token', res.token);
       localStorage.setItem(
         'dams_user',
@@ -38,7 +61,7 @@ export default function LoginPage() {
           stationId: res.stationId,
         })
       );
-      
+
       let redirectUrl = '/dashboard';
       if (typeof window !== 'undefined') {
         const searchParams = new URLSearchParams(window.location.search);
@@ -55,101 +78,150 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (roleUser: string) => {
-    setUsername(roleUser);
-    setPassword('password123');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    signIn(username, password);
   };
 
-  const demoAccounts = [
-    { label: 'Super Admin', username: 'admin' },
-    { label: 'Regional Mgr', username: 'rm_accra' },
-    { label: 'Station Mgr', username: 'sm_tema' },
-    { label: 'Asset Officer', username: 'officer' },
-    { label: 'Auditor', username: 'auditor' },
-  ];
+  const handleQuickLogin = (user: string) => {
+    setUsername(user);
+    setPassword(DEMO_PASSWORD);
+    signIn(user, DEMO_PASSWORD);
+  };
 
   return (
-    <div className="w-full max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl shadow-slate-950/50 space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-white">DVLA Ghana</h1>
-        <p className="text-sm text-slate-400">Asset Management System (DAMS)</p>
-      </div>
+    <main
+      className="lg-page"
+      style={
+        {
+          '--lg-accent': '#d97706',
+          '--lg-accent-dark': '#b45309',
+          '--lg-accent-soft': '#fef3e2',
+          '--lg-accent-ring': '#f6d9a8',
+        } as React.CSSProperties
+      }
+    >
+      <div className="lg-card">
+        {/* Brand panel */}
+        <section className="lg-brand">
+          <div>
+            <div className="lg-org">
+              <div className="lg-logo">
+                <img src="/logo.png" alt="DVLA Ghana" />
+              </div>
+              <div>
+                <div className="lg-org-name">DVLA GHANA</div>
+                <div className="lg-org-sub">DRIVER &amp; VEHICLE LICENSING AUTHORITY</div>
+              </div>
+            </div>
 
-      {error && (
-        <div className="flex items-center space-x-2 p-3 bg-red-950/40 border border-red-900/50 text-red-200 rounded-lg text-sm">
-          <ShieldAlert className="w-5 h-5 flex-shrink-0 text-red-400" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Username</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-              <UserIcon className="w-5 h-5" />
+            <span className="lg-pill">
+              <Boxes /> DAMS
             </span>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg text-slate-200 text-sm placeholder-slate-600 transition-colors focus:outline-none"
-              placeholder="Enter username"
-            />
+            <h1 className="lg-title">Asset Management Portal</h1>
+            <p className="lg-desc">
+              Official DVLA asset register for tracking assets, inter-station transfers,
+              periodic verifications and disposals across every region and station.
+            </p>
+
+            <div className="lg-chips">
+              {FEATURES.map((f) => (
+                <span key={f} className="lg-chip">
+                  <CheckCircle2 /> {f}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Password</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-              <Lock className="w-5 h-5" />
-            </span>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg text-slate-200 text-sm placeholder-slate-600 transition-colors focus:outline-none"
-              placeholder="Enter password"
-            />
+          <div className="lg-foot">
+            <span className="lg-dot" />
+            DVLA Asset Management &middot; Authorized Personnel Only
           </div>
-        </div>
+        </section>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-slate-950 font-bold rounded-lg transition-colors flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Authenticating...</span>
-            </>
-          ) : (
-            <span>Sign In</span>
-          )}
-        </button>
-      </form>
+        {/* Form panel */}
+        <section className="lg-form-wrap">
+          <h2 className="lg-form-title">Sign In</h2>
+          <p className="lg-form-sub">Enter your asset management credentials to continue.</p>
 
-      <div className="relative flex py-2 items-center">
-        <div className="flex-grow border-t border-slate-800"></div>
-        <span className="flex-shrink mx-4 text-slate-500 text-xs font-semibold uppercase tracking-wider">Quick Demo Login</span>
-        <div className="flex-grow border-t border-slate-800"></div>
+          {error && <div className="lg-error">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <label className="lg-label" htmlFor="ams-username">Username</label>
+            <div className="lg-field">
+              <UserIcon className="lg-ico" />
+              <input
+                id="ams-username"
+                className="lg-input"
+                type="text"
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your assigned username"
+              />
+            </div>
+
+            <label className="lg-label" htmlFor="ams-password">Password</label>
+            <div className="lg-field">
+              <Lock className="lg-ico" />
+              <input
+                id="ams-password"
+                className="lg-input"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="lg-eye"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
+            </div>
+
+            <button id="ams-signin" type="submit" disabled={loading} className="lg-submit">
+              {loading ? (
+                <>
+                  <Loader2 className="lg-spin" /> Authenticating...
+                </>
+              ) : (
+                <>
+                  Sign in to Asset Management <ArrowRight />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="lg-demo">
+            <div className="lg-demo-head">
+              <span>
+                <KeyRound /> Demo quick logins
+              </span>
+              <em>Default: {DEMO_PASSWORD}</em>
+            </div>
+            <div className="lg-demo-grid">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.username}
+                  type="button"
+                  className="lg-demo-btn"
+                  disabled={loading}
+                  onClick={() => handleQuickLogin(acc.username)}
+                >
+                  <span className="lg-demo-user">{acc.username}</span>
+                  <span className="lg-demo-role">{acc.role}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {demoAccounts.map((acc) => (
-          <button
-            key={acc.username}
-            onClick={() => handleQuickLogin(acc.username)}
-            className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs font-medium transition-colors text-left truncate"
-          >
-            {acc.label}
-          </button>
-        ))}
-      </div>
-    </div>
+    </main>
   );
 }

@@ -2,15 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { emsPerms } from '@/lib/ems-constants';
 import {
   LayoutDashboard,
   Send,
   FileCheck2,
   FileBarChart2,
   Building2,
+  Layers,
   ShieldCheck,
   LogOut,
   User,
+  Users,
   Menu,
   X,
 } from 'lucide-react';
@@ -21,7 +24,7 @@ interface EmsSidebarProps {
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
   activeView?: string;
-  onSelectView?: (view: 'dashboard' | 'registry' | 'returns' | 'reports' | 'compliance' | 'audit') => void;
+  onSelectView?: (view: 'dashboard' | 'registry' | 'returns' | 'reports' | 'compliance' | 'stations' | 'users' | 'audit') => void;
 }
 
 export default function EmsSidebar({
@@ -62,7 +65,9 @@ export default function EmsSidebar({
     if (onCollapseChange) onCollapseChange(next);
   };
 
-  const navItems = [
+  const canManageStations = emsPerms(user?.role).canManageUsers;
+
+  const allNavItems = [
     {
       id: 'dashboard',
       name: 'EMS Dashboard',
@@ -94,12 +99,27 @@ export default function EmsSidebar({
       description: 'National Status Matrix',
     },
     {
+      id: 'stations',
+      name: 'Stations & Departments',
+      icon: Layers,
+      description: 'Add Offices & Units',
+    },
+    {
+      id: 'users',
+      name: 'User Accounts',
+      icon: Users,
+      description: 'Create & Manage Staff',
+    },
+    {
       id: 'audit',
       name: 'Audit Trail',
       icon: ShieldCheck,
       description: 'Tamper-Proof System Logs',
     },
   ];
+
+  const canManage = emsPerms(user?.role).canManageUsers;
+  const navItems = allNavItems.filter((item) => (item.id !== 'stations' && item.id !== 'users') || canManage);
 
   return (
     <>

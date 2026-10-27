@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import * as s from '@/db/schema';
-import { eq, desc, isNull } from 'drizzle-orm';
+import { eq, desc, isNull, ne } from 'drizzle-orm';
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-helper';
+import { emsPerms } from '@/lib/ems-constants';
 import { logAudit } from '@/lib/audit-helper';
 
 export async function GET(req: NextRequest) {
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
+
+    const perms = emsPerms(caller.role);
+    if (!perms.canManageUsers) {
+      return forbiddenResponse('Only the EMS Director or Super Admin can view and manage user accounts.');
+    }
 
     const rows = await db
       .select({
@@ -47,7 +53,44 @@ export async function GET(req: NextRequest) {
       createdAt: u.createdAt,
     }));
 
-    return NextResponse.json({ success: true, users: usersList });
+    // Available roles excluding IT Admin (EMS Director now manages accounts)
+    const rolesList = await db
+      .select({
+        id: s.roles.id,
+        name: s.roles.name,
+        description: s.roles.description,
+      })
+      .from(s.roles)
+      .where(ne(s.roles.name, 'EMS_IT_Admin'))
+      .orderBy(s.roles.id);
+
+    const stationsList = await db
+      .select({
+        id: s.stations.id,
+        name: s.stations.name,
+        code: s.stations.code,
+        regionId: s.stations.regionId,
+      })
+      .from(s.stations)
+      .where(isNull(s.stations.deletedAt))
+      .orderBy(s.stations.name);
+
+    const regionsList = await db
+      .select({
+        id: s.regions.id,
+        name: s.regions.name,
+        code: s.regions.code,
+      })
+      .from(s.regions)
+      .orderBy(s.regions.name);
+
+    return NextResponse.json({
+      success: true,
+      users: usersList,
+      roles: rolesList,
+      stations: stationsList,
+      regions: regionsList,
+    });
   } catch (err: any) {
     console.error('Admin Users GET Error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -59,7 +102,12 @@ export async function POST(req: NextRequest) {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
 
-    const body = await req.json();
+    const perms = emsPerms(caller.role);
+    if (!perms.canManageUsers) {
+      return forbiddenResponse('Only the EMS Director or Super Admin can create user accounts.');
+    }
+
+    const body = await req.json().catch(() => ({}));
     const { username, email, name, password, roleId, regionId, stationId } = body;
 
     if (!username || !email || !name || !password || !roleId) {
@@ -97,10 +145,14 @@ export async function POST(req: NextRequest) {
       stationId: stationId ? parseInt(stationId) : null,
     });
 
-    await logAudit('Create EMS User', caller.sub, req, `Created user ${cleanUsername}`);
+    await logAudit('Create EMS User', caller.sub, req, `Created user ${cleanUsername} (Role ID: ${roleId})`);
 
-    return NextResponse.json({ success: true, message: 'User created successfully', id: inserted.insertId }, { status: 201 });
+    return NextResponse.json(
+      { success: true, message: 'User created successfully', id: inserted.insertId },
+      { status: 201 }
+    );
   } catch (err: any) {
+    console.error('Admin Users POST Error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

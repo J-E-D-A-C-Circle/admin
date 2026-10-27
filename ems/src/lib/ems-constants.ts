@@ -47,7 +47,7 @@ export const EMS_DB_ROLES = [
   { name: 'EMS_IT_Admin', label: 'IT Admin', description: 'EMS IT Admin: creates users, assigns offices, manages backups. Cannot edit money figures.' },
   { name: 'EMS_Admin_Officer', label: 'Admin Officer', description: 'EMS Admin Officer: logs dispatches, uploads receipts, submits the monthly return for own office.' },
   { name: 'EMS_Manager', label: 'Manager', description: 'EMS Manager (Regional/District/Station Head): verifies or rejects entries from own office.' },
-  { name: 'EMS_Director', label: 'Director, Administration (HQ)', description: 'EMS Director, Administration (HQ): national oversight, approves returns, exports reports, unlocks returns.' },
+  { name: 'EMS_Director', label: 'Director, Administration (HQ)', description: 'EMS Director, Administration (HQ): national oversight, approves returns, exports reports, creates user accounts.' },
   { name: 'EMS_Finance_Audit', label: 'Finance / Audit', description: 'EMS Finance / Audit: view and export only.' },
 ] as const;
 
@@ -165,6 +165,7 @@ export function emsPerms(role?: string | null): EmsPerms {
         canViewReports: true,
         canViewConsolidated: true,
         canViewAudit: true,
+        canManageUsers: true,
       };
     case EMS_ROLES.FINANCE:
       return {

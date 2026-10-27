@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ems_user
       MYSQL_PASSWORD: ems_password
     ports:
-      - '3308:3306'
+      - '3310:3306'
     volumes:
       - ems_mysql_data:/var/lib/mysql
       - ./src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro

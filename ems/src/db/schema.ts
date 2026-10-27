@@ -36,6 +36,19 @@ export const stations = mysqlTable('dms_stations', {
   codeIdx: index('idx_stations_code').on(table.code),
 }));
 
+// EMS DEPARTMENTS TABLE (units that belong to one station)
+export const emsDepartments = mysqlTable('ems_departments', {
+  id: int('id').primaryKey().autoincrement(),
+  stationId: int('station_id').notNull().references(() => stations.id),
+  name: varchar('name', { length: 100 }).notNull(),
+  code: varchar('code', { length: 20 }),
+  createdByUserId: int('created_by_user_id'),
+  createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  stationIdx: index('idx_ems_dept_station').on(table.stationId),
+  stationNameUnique: uniqueIndex('uq_ems_dept_station_name').on(table.stationId, table.name),
+}));
+
 // ROLES TABLE
 export const roles = mysqlTable('dms_roles', {
   id: int('id').primaryKey().autoincrement(),

@@ -53,6 +53,19 @@ INSERT INTO `dms_stations` (`id`, `name`, `code`, `location`, `region_id`) VALUE
 (9, 'Cape Coast Station', 'CAP-01', 'Kotokuraba Road, Cape Coast', 6)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
+-- 2b. EMS DEPARTMENTS (units under a station)
+CREATE TABLE IF NOT EXISTS `ems_departments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `station_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `code` varchar(20) DEFAULT NULL,
+  `created_by_user_id` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ems_dept_station_name` (`station_id`, `name`),
+  KEY `idx_ems_dept_station` (`station_id`),
+  FOREIGN KEY (`station_id`) REFERENCES `dms_stations` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- 3. ROLES
 CREATE TABLE IF NOT EXISTS `dms_roles` (
   `id` int NOT NULL AUTO_INCREMENT,

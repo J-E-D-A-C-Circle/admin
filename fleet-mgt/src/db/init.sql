@@ -19,8 +19,11 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `name`, `role`) VALUES
-(1, 'admin', 'admin@dvla.gov.gh', '$2b$10$5Awjyho8pORQJC1MclnnZOpVuqgF8Scy2OpGGx2UsWUkH0ATDkw1S', 'DVLA Fleet Administrator', 'Super Admin')
-ON DUPLICATE KEY UPDATE `username` = VALUES(`username`);
+(1, 'admin', 'admin@dvla.gov.gh', '$2a$10$HLKAF3hrbE3doKPN6NULEOdjXfn6o8QMSGDc9WezRIYFsy.dne7.m', 'DVLA Fleet Administrator', 'Super Admin'),
+(2, 'fleet_manager', 'fleet.manager@dvla.gov.gh', '$2a$10$HLKAF3hrbE3doKPN6NULEOdjXfn6o8QMSGDc9WezRIYFsy.dne7.m', 'Fleet Manager', 'Fleet Manager'),
+(3, 'transport_officer', 'transport.officer@dvla.gov.gh', '$2a$10$HLKAF3hrbE3doKPN6NULEOdjXfn6o8QMSGDc9WezRIYFsy.dne7.m', 'Transport Officer', 'Transport Officer'),
+(4, 'fleet_auditor', 'fleet.auditor@dvla.gov.gh', '$2a$10$HLKAF3hrbE3doKPN6NULEOdjXfn6o8QMSGDc9WezRIYFsy.dne7.m', 'Fleet Auditor', 'Fleet Auditor')
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`), `name` = VALUES(`name`), `role` = VALUES(`role`);
 
 -- 2. STATIONS
 CREATE TABLE IF NOT EXISTS `stations` (

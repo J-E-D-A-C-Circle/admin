@@ -40,6 +40,13 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     const now = new Date();
 
     if (action === 'unlock') {
+      const isSuperAdmin = a.user.role === 'Super Admin' || a.user.role === 'Super_Admin';
+      if (!isSuperAdmin) {
+        return NextResponse.json(
+          { message: 'Access Denied. Only the Super Administrator has authority to unlock a finalized return.' },
+          { status: 403 }
+        );
+      }
       const unlockReason = (body.unlockReason || body.reason || '').trim();
       if (!unlockReason) {
         return NextResponse.json({ message: 'A reason is mandatory when unlocking a return for correction.' }, { status: 400 });
