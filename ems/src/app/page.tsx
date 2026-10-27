@@ -630,7 +630,7 @@ export default function EmsPage() {
   }, [auditLogs, auditFilter]);
 
   return (
-    <div className="flex h-screen bg-zinc-50/70 text-zinc-900 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
       {/* ── Dedicated GhanaPost EMS Sidebar (No Asset Elements) ── */}
       <EmsSidebar
         collapsed={collapsed}
@@ -653,6 +653,7 @@ export default function EmsPage() {
         {/* Dedicated GhanaPost EMS Top Header */}
         <EmsHeader
           onToggleSidebar={() => setMobileOpen(true)}
+          activeView={activeView}
           pendingCount={stats?.month.pendingCount || 0}
           totalLettersMonth={stats?.month.totalLetters || 0}
           totalCostMonth={stats?.month.totalCost || 0}

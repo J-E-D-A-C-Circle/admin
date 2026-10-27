@@ -21,7 +21,7 @@ const DEMO_ACCOUNTS = [
     username: 'ems_officer',
     password: 'password123',
     desc: 'Logs postal dispatches, uploads receipts & submits returns for Kumasi Station.',
-    tagBg: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600/20'
+    tagBg: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
   },
   {
     role: 'EMS Station Manager',
@@ -29,7 +29,7 @@ const DEMO_ACCOUNTS = [
     username: 'ems_mgr',
     password: 'password123',
     desc: 'Verifies or rejects dispatches from own station with mandatory reason.',
-    tagBg: 'bg-teal-50 text-teal-800 ring-1 ring-teal-600/20'
+    tagBg: 'bg-teal-500/10 text-teal-400 border border-teal-500/30'
   },
   {
     role: 'EMS Director, Admin HQ',
@@ -37,7 +37,7 @@ const DEMO_ACCOUNTS = [
     username: 'ems_director',
     password: 'password123',
     desc: 'National oversight, final monthly return approvals, unlocks & master reports.',
-    tagBg: 'bg-blue-50 text-blue-800 ring-1 ring-blue-600/20'
+    tagBg: 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
   },
   {
     role: 'EMS IT Admin',
@@ -45,7 +45,7 @@ const DEMO_ACCOUNTS = [
     username: 'ems_it',
     password: 'password123',
     desc: 'Manages EMS users, assigns offices, handles backups. Zero access to money data.',
-    tagBg: 'bg-purple-50 text-purple-800 ring-1 ring-purple-600/20'
+    tagBg: 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
   },
   {
     role: 'EMS Finance / Audit',
@@ -53,7 +53,7 @@ const DEMO_ACCOUNTS = [
     username: 'ems_audit',
     password: 'password123',
     desc: 'View & export only, expenditure verification, tamper-proof logs.',
-    tagBg: 'bg-amber-50 text-amber-800 ring-1 ring-amber-600/20'
+    tagBg: 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
   },
   {
     role: 'Super Administrator',
@@ -61,7 +61,7 @@ const DEMO_ACCOUNTS = [
     username: 'admin',
     password: 'password123',
     desc: 'Unrestricted master control across all offices, roles and modules.',
-    tagBg: 'bg-zinc-100 text-zinc-800 ring-1 ring-zinc-300'
+    tagBg: 'bg-slate-800 text-slate-200 border border-slate-700'
   }
 ];
 
@@ -121,72 +121,72 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/70 text-zinc-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-amber-500 selection:text-slate-950">
       {/* Background Subtle Gradient & Grid Accent */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         {/* Brand Crest */}
-        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white shadow-sm p-2 mb-4 border border-zinc-200/80">
+        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white shadow-[0_0_20px_rgba(212,175,55,0.25)] p-2 mb-4 border border-amber-500/40">
           <img src="/logo.png" alt="DVLA Ghana" className="h-full w-full object-contain" />
         </div>
 
-        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-950 flex items-center justify-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
           <span>DVLA EMS PORTAL</span>
-        </h2>
-        <p className="mt-1.5 text-xs sm:text-sm text-zinc-500 font-medium max-w-sm mx-auto">
+        </h1>
+        <p className="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium max-w-sm mx-auto">
           GhanaPost Express Mail Service Tracking &amp; Expenditure Control
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-4xl px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white rounded-3xl border border-zinc-200/80 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-800 shadow-2xl shadow-slate-950/80 p-6 sm:p-8">
           
           {/* Left Form: Direct Login */}
-          <div className="lg:col-span-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-zinc-200/80 pb-6 lg:pb-0 lg:pr-8">
+          <div className="lg:col-span-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800 pb-6 lg:pb-0 lg:pr-8">
             <div>
               <div className="flex items-center justify-between mb-5">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Secure Sign In</span>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Secure Sign In</span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
                   Official SRS v2.4
                 </span>
               </div>
 
               {error && (
-                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                <div className="mb-4 p-3 rounded-xl bg-rose-950/50 border border-rose-900/60 text-rose-300 text-xs font-medium">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Username or Work Email
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-3 w-4 h-4 text-zinc-400" />
+                    <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
                     <input
                       type="text"
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="e.g. ems_officer"
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50/70 border border-zinc-200 text-zinc-900 placeholder-zinc-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 focus:bg-white transition"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 text-xs sm:text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Account Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-3 w-4 h-4 text-zinc-400" />
+                    <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
                     <input
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50/70 border border-zinc-200 text-zinc-900 placeholder-zinc-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 focus:bg-white transition"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 text-xs sm:text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                     />
                   </div>
                 </div>
@@ -194,7 +194,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-3 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                  className="w-full mt-3 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-950 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -211,9 +211,9 @@ export default function LoginPage() {
               </form>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-zinc-100">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="mt-6 pt-4 border-t border-slate-800/80">
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Protected by SHA-256 JWT &amp; PFMA Role Scoping</span>
               </div>
             </div>
@@ -224,10 +224,10 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-3.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-zinc-950">One-Click Role Demonstration</h3>
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <h2 className="text-sm font-bold text-white">One-Click Role Demonstration</h2>
                 </div>
-                <span className="text-[11px] text-zinc-400">Click any card to log in directly</span>
+                <span className="text-[11px] text-slate-500">Click any card to log in directly</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -237,21 +237,21 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => selectDemoAccount(acc)}
                     disabled={loading}
-                    className="text-left p-3 rounded-2xl bg-zinc-50/70 border border-zinc-200/80 hover:bg-emerald-50/30 hover:border-emerald-500/50 transition-all shadow-2xs group cursor-pointer disabled:opacity-50"
+                    className="text-left p-3 rounded-2xl bg-slate-950/60 border border-slate-800 hover:bg-slate-800/40 hover:border-amber-500/40 transition-all group cursor-pointer disabled:opacity-50"
                   >
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-semibold text-zinc-900 group-hover:text-emerald-800 transition-colors">
+                      <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-300 transition-colors">
                         {acc.role}
                       </span>
                       <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded-md ${acc.tagBg}`}>
                         {acc.badge}
                       </span>
                     </div>
-                    <p className="text-[10px] text-zinc-500 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
                       {acc.desc}
                     </p>
-                    <div className="mt-2.5 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-                      <span className="text-emerald-700 font-semibold">{acc.username}</span>
+                    <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span className="text-amber-400 font-semibold">{acc.username}</span>
                       <span>password123</span>
                     </div>
                   </button>
@@ -259,10 +259,10 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-2.5 text-[11px] text-zinc-500">
-              <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-start gap-2.5 text-[11px] text-slate-400">
+              <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <span>
-                <strong className="text-zinc-700">SRS Imprest Rule:</strong> Admin Officers log dispatches for their station. Station Managers verify or reject vouchers. HQ Director has national sign-off and unlock permissions.
+                <strong className="text-slate-200">SRS Imprest Rule:</strong> Admin Officers log dispatches for their station. Station Managers verify or reject vouchers. HQ Director has national sign-off and unlock permissions.
               </span>
             </div>
           </div>

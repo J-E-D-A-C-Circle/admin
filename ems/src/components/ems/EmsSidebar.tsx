@@ -13,7 +13,11 @@ import {
   User,
   Menu,
   X,
+  Sun,
+  Moon,
+  Activity
 } from 'lucide-react';
+import { useTheme } from '@/lib/theme-context';
 
 interface EmsSidebarProps {
   collapsed?: boolean;
@@ -29,13 +33,14 @@ export default function EmsSidebar({
   onCollapseChange,
   mobileOpen = false,
   onCloseMobile,
-  activeView = 'hub',
+  activeView = 'dashboard',
   onSelectView
 }: EmsSidebarProps) {
   const router = useRouter();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
   const [user, setUser] = useState<any>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('ems_user') || localStorage.getItem('dams_user');
@@ -85,13 +90,13 @@ export default function EmsSidebar({
       id: 'reports',
       name: 'Reports & Export',
       icon: FileBarChart2,
-      description: 'Excel & Official PDF',
+      description: 'PFMA Statements & Excel',
     },
     {
       id: 'compliance',
       name: 'Offices & Compliance',
       icon: Building2,
-      description: 'National Status Matrix',
+      description: '16 Regions Matrix',
     },
     {
       id: 'audit',
@@ -106,58 +111,60 @@ export default function EmsSidebar({
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-30 md:hidden transition-opacity"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-white border-r border-zinc-200/70 text-zinc-800 flex flex-col ${
+        className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-slate-900 border-r border-slate-800 text-slate-300 flex flex-col ${
           collapsed ? 'md:w-20' : 'md:w-64'
-        } w-64 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-[0_0_15px_rgba(0,0,0,0.02)]`}
+        } w-64 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-2xl`}
       >
         {/* Brand header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-200/70 bg-white">
-          <div className="flex items-center space-x-2.5 overflow-hidden">
-            <div className="h-9 w-9 rounded-xl bg-zinc-50 border border-zinc-200/80 p-1 flex items-center justify-center shrink-0 shadow-2xs">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800 bg-slate-950/40">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <div className="h-9 w-9 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(212,175,55,0.25)] border border-amber-500/40">
               <img src="/logo.png" alt="DVLA" className="h-full w-full object-contain" />
             </div>
             {!collapsed && (
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-zinc-950 tracking-tight leading-none">
-                  DVLA EMS TRACKING
+                <span className="text-sm font-extrabold tracking-tight text-white leading-none">
+                  DVLA EMS
                 </span>
-                <span className="text-[10px] text-emerald-700 font-semibold tracking-wider uppercase mt-1">
-                  Expenditure Control
+                <span className="text-[10px] text-amber-400 font-semibold tracking-wider uppercase mt-1">
+                  Postal &amp; Expenditure
                 </span>
               </div>
             )}
           </div>
           <button
             onClick={toggleCollapse}
-            className="hidden md:flex p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 ml-auto flex-shrink-0 transition-colors"
+            className="hidden md:flex p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white ml-auto flex-shrink-0 transition-colors cursor-pointer"
             aria-label="Collapse sidebar"
           >
-            {collapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
+            {collapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
           </button>
           <button
             onClick={onCloseMobile}
-            className="md:hidden p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 ml-auto flex-shrink-0 transition-colors"
+            className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white ml-auto flex-shrink-0 transition-colors cursor-pointer"
             aria-label="Close sidebar"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Category Label */}
-        <div className="px-4 pt-4 pb-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-            {!collapsed && <span>SRS Tracking Modules</span>}
+        {!collapsed && (
+          <div className="px-4 pt-4 pb-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Administrative Modules
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Navigation items */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = activeView === item.id;
             const Icon = item.icon;
@@ -170,15 +177,16 @@ export default function EmsSidebar({
                   if (onSelectView) onSelectView(item.id as any);
                   if (mobileOpen && onCloseMobile) onCloseMobile();
                 }}
-                className={`w-full flex items-center px-3 py-2.5 rounded-xl text-left transition-all group ${
+                className={`w-full flex items-center px-3 py-2.5 rounded-xl text-left transition-all group cursor-pointer ${
                   isActive
-                    ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100/70 font-medium'
+                    ? 'bg-gradient-to-r from-amber-500/20 to-emerald-500/10 text-amber-300 border-l-4 border-amber-500 font-semibold shadow-md shadow-amber-500/10'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60 font-medium'
                 }`}
+                title={collapsed ? item.name : undefined}
               >
                 <Icon
-                  className={`w-4.5 h-4.5 ${collapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 ${
-                    isActive ? 'text-white' : 'text-zinc-500 group-hover:text-emerald-700'
+                  className={`w-5 h-5 ${collapsed ? 'mx-auto' : 'mr-3'} flex-shrink-0 transition-colors ${
+                    isActive ? 'text-amber-400' : 'text-slate-400 group-hover:text-amber-400'
                   }`}
                 />
                 {!collapsed && (
@@ -186,7 +194,7 @@ export default function EmsSidebar({
                     <span className="text-xs font-semibold block leading-tight">{item.name}</span>
                     <span
                       className={`text-[10px] block mt-0.5 truncate leading-tight ${
-                        isActive ? 'text-emerald-100 font-normal' : 'text-zinc-400'
+                        isActive ? 'text-amber-300/80 font-normal' : 'text-slate-500'
                       }`}
                     >
                       {item.description}
@@ -199,37 +207,57 @@ export default function EmsSidebar({
         </nav>
 
         {/* User profile & footer */}
-        <div className="p-3 border-t border-zinc-200/70 bg-zinc-50/50 space-y-2">
+        <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2.5">
           {!collapsed && (
-            <div className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-white border border-zinc-200/80 shadow-2xs">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 ring-1 ring-emerald-600/20 flex items-center justify-center text-emerald-700 shrink-0">
+            <div className="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <User className="w-4 h-4" />
               </div>
               <div className="overflow-hidden flex-1">
-                <p className="text-xs font-semibold text-zinc-900 truncate leading-snug">
+                <p className="text-xs font-semibold text-slate-100 truncate leading-snug">
                   {user?.name || 'EMS Officer'}
                 </p>
-                <p className="text-[10px] font-medium text-emerald-700 truncate leading-none mt-0.5">
-                  {user?.role || 'EMS Admin Officer'}
+                <p className="text-[10px] font-medium text-amber-400/90 truncate leading-none mt-0.5">
+                  {user?.role || 'Admin Officer'}
                 </p>
               </div>
             </div>
           )}
 
           {!collapsed && (
-            <div className="flex items-center justify-between w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-[10px] font-semibold tracking-wider text-zinc-600 shadow-2xs">
+            <div className="flex items-center justify-between w-full rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-slate-400">
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 pulse-active" />
                 <span>GhanaPost Sync</span>
               </span>
-              <span className="text-emerald-700 font-bold">Active</span>
+              <span className="text-emerald-400 font-bold">Connected</span>
             </div>
           )}
+
+          {/* Theme toggle button */}
+          <button
+            onClick={toggleTheme}
+            type="button"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className={`flex items-center w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white transition-all cursor-pointer ${
+              collapsed ? 'justify-center' : 'justify-between'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-400" />
+              )}
+              {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+            </div>
+          </button>
 
           {/* Sign Out */}
           <button
             onClick={handleLogout}
-            className={`flex items-center w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-rose-50 text-zinc-600 hover:text-rose-700 border border-zinc-200/80 hover:border-rose-200 transition-all shadow-2xs cursor-pointer ${
+            type="button"
+            className={`flex items-center w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-900/60 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-500/30 transition-all cursor-pointer ${
               collapsed ? 'justify-center' : 'justify-center space-x-2'
             }`}
             title="Sign Out of EMS"
