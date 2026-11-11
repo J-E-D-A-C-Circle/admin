@@ -1,18 +1,3 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-COPY package.json package-lock.json* ./
-
-RUN npm install
-
-COPY . .
-
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
-RUN npm run build
-
 FROM node:20-alpine AS runner
 
 WORKDIR /app
@@ -24,9 +9,9 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --chown=nextjs:nodejs .next/standalone ./
+COPY --chown=nextjs:nodejs .next/static ./.next/static
+COPY --chown=nextjs:nodejs public ./public
 
 USER nextjs
 

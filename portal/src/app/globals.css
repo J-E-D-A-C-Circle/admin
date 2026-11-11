@@ -2,29 +2,59 @@
 
 @layer base {
   :root {
-    --background: #f8fafc;
+    --background: #ffffff;
     --foreground: #0f172a;
-    --card-bg: #ffffff;
-    --card-border: #e2e8f0;
-    --card-border-hover: #cbd5e1;
-    --text-main: #0f172a;
-    --text-muted: #475569;
   }
 
   body {
-    background: #f8fafc;
+    background-color: #ffffff;
     color: #0f172a;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
   }
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.8); opacity: 0; }
-  100% { transform: scale(0.95); opacity: 0; }
+/* Background grid pattern for light theme */
+.bg-grid-pattern-light {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
 }
 
-.animate-pulse-ring {
-  animation: pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+.bg-radial-light {
+  background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.06) 0%, rgba(255, 255, 255, 0) 70%),
+              radial-gradient(circle at 85% 50%, rgba(59, 130, 246, 0.04) 0%, rgba(255, 255, 255, 0) 60%),
+              radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.04) 0%, rgba(255, 255, 255, 0) 60%);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Radar pulse animation */
+@keyframes radar-pulse {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  50% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(0.9); opacity: 0; }
+}
+
+.animate-radar-pulse {
+  animation: radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
