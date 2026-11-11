@@ -1,7 +1,24 @@
-# Pre-built deployment — no npm install or npm build inside Docker.
-# Build is done on the host: `npm run build`
-# Then Docker just copies the pre-built output.
+# Multi-stage Dockerfile for DVLA Asset Management System Standalone
+FROM node:20-alpine AS builder
 
+WORKDIR /app
+
+# Copy package manifests
+COPY package.json package-lock.json* ./
+
+# Install dependencies (legacy peer deps handles React 19 / Next.js)
+RUN npm install --legacy-peer-deps
+
+# Copy application source code
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the Next.js standalone application
+RUN npm run build
+
+# Runner Stage
 FROM node:20-alpine AS runner
 
 WORKDIR /app
@@ -15,11 +32,11 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy standalone output (Next.js output.standalone contains server.js)
-COPY --chown=nextjs:nodejs .next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 # Copy static assets (CSS, JS chunks)
-COPY --chown=nextjs:nodejs .next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy public folder (images, fonts, etc.)
-COPY --chown=nextjs:nodejs public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 

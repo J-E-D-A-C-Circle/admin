@@ -44,6 +44,7 @@ export default function CentralPortal() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDevOps, setShowDevOps] = useState(false);
+  const [host, setHost] = useState('localhost');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStatus = async () => {
@@ -66,6 +67,7 @@ export default function CentralPortal() {
       // Browser direct fallback
     }
 
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     const checkClient = async (url: string) => {
       const start = Date.now();
       try {
@@ -80,9 +82,9 @@ export default function CentralPortal() {
     };
 
     const [amsRes, emsRes, fleetRes] = await Promise.all([
-      checkClient('http://localhost:3001'),
-      checkClient('http://localhost:3002'),
-      checkClient('http://localhost:3003'),
+      checkClient(`http://${currentHost}:3001`),
+      checkClient(`http://${currentHost}:3002`),
+      checkClient(`http://${currentHost}:3003`),
     ]);
 
     setStatus({
@@ -100,6 +102,9 @@ export default function CentralPortal() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hostname) {
+      setHost(window.location.hostname);
+    }
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000);
 
@@ -161,7 +166,7 @@ export default function CentralPortal() {
       title: 'Asset Management System',
       acronym: 'AMS',
       port: 3001,
-      url: 'http://localhost:3001',
+      url: `http://${host}:3001`,
       tag: 'Capital Assets & GIS',
       color: 'emerald',
       gradient: 'from-emerald-500 to-teal-500',
@@ -181,7 +186,7 @@ export default function CentralPortal() {
       title: 'Expenditure Management System',
       acronym: 'EMS',
       port: 3002,
-      url: 'http://localhost:3002',
+      url: `http://${host}:3002`,
       tag: 'Expenditure & Logistics',
       color: 'cyan',
       gradient: 'from-cyan-500 to-blue-500',
@@ -201,7 +206,7 @@ export default function CentralPortal() {
       title: 'Fleet Management System',
       acronym: 'FMS',
       port: 3003,
-      url: 'http://localhost:3003',
+      url: `http://${host}:3003`,
       tag: 'Telematics & Fleet Operations',
       color: 'indigo',
       gradient: 'from-indigo-500 to-violet-500',
@@ -557,7 +562,7 @@ export default function CentralPortal() {
                       </p>
                     </div>
                     <a
-                      href="http://localhost:8080"
+                      href={`http://${host}:8080`}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800 pt-2 border-t border-slate-200 group"
@@ -582,7 +587,7 @@ export default function CentralPortal() {
                       </p>
                     </div>
                     <a
-                      href="http://localhost:8082"
+                      href={`http://${host}:8082`}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-cyan-700 hover:text-cyan-800 pt-2 border-t border-slate-200 group"
@@ -607,7 +612,7 @@ export default function CentralPortal() {
                       </p>
                     </div>
                     <a
-                      href="http://localhost:8083"
+                      href={`http://${host}:8083`}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-4 inline-flex items-center justify-between text-xs font-semibold text-indigo-700 hover:text-indigo-800 pt-2 border-t border-slate-200 group"

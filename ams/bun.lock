@@ -7,6 +7,7 @@
       "dependencies": {
         "@hookform/resolvers": "^3.4.2",
         "@radix-ui/react-select": "^2.3.1",
+        "@types/leaflet": "^1.9.22",
         "@types/react-signature-canvas": "^1.0.7",
         "bcryptjs": "^2.4.3",
         "clsx": "^2.1.1",
@@ -15,6 +16,7 @@
         "jsonwebtoken": "^9.0.2",
         "jspdf": "^2.5.2",
         "jspdf-autotable": "^3.8.4",
+        "leaflet": "^1.9.4",
         "lucide-react": "^0.379.0",
         "mysql2": "^3.9.8",
         "next": "16.2.7",
@@ -376,11 +378,15 @@
 
     "@types/estree": ["@types/estree@1.0.9", "", {}, ""],
 
+    "@types/geojson": ["@types/geojson@7946.0.16", "", {}, "sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg=="],
+
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, ""],
 
     "@types/json5": ["@types/json5@0.0.29", "", {}, ""],
 
     "@types/jsonwebtoken": ["@types/jsonwebtoken@9.0.10", "https://registry.npmmirror.com/@types/jsonwebtoken/-/jsonwebtoken-9.0.10.tgz", { "dependencies": { "@types/ms": "*", "@types/node": "*" } }, "sha512-asx5hIG9Qmf/1oStypjanR7iKTv0gXQ1Ov/jfrX6kS/EO0OFni8orbmGCn0672NHR3kXHwpAwR+B368ZGN/2rA=="],
+
+    "@types/leaflet": ["@types/leaflet@1.9.22", "", { "dependencies": { "@types/geojson": "*" } }, "sha512-h3lhECYEKDasG7LFHu+GiHqAvsgLuQvlJvVZzJDGONo3sEL+wUOqSFLnwkZlK0qVxnxbuGFW8iBlJNYs5wgndA=="],
 
     "@types/ms": ["@types/ms@2.1.0", "https://registry.npmmirror.com/@types/ms/-/ms-2.1.0.tgz", {}, "sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA=="],
 
@@ -921,6 +927,8 @@
     "language-subtag-registry": ["language-subtag-registry@0.3.23", "", {}, ""],
 
     "language-tags": ["language-tags@1.0.9", "", { "dependencies": { "language-subtag-registry": "^0.3.20" } }, ""],
+
+    "leaflet": ["leaflet@1.9.4", "", {}, "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA=="],
 
     "levn": ["levn@0.4.1", "", { "dependencies": { "prelude-ls": "^1.2.1", "type-check": "~0.4.0" } }, ""],
 
