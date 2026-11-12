@@ -4,10 +4,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package manifests
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* bun.lock* ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (legacy peer deps handles React 19 / Next.js)
+RUN npm install --legacy-peer-deps
 
 # Copy application source code
 COPY . .
