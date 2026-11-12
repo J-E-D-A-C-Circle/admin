@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Public_Sans } from 'next/font/google';
 import './globals.css';
 import LayoutClientWrapper from '@/app/layout-client';
 
-const poppins = Poppins({
-  weight: ['300', '400', '500', '600', '700'],
+const publicSans = Public_Sans({
+  weight: ['300', '400', '500', '600', '700', '800'],
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-poppins',
+  variable: '--font-public-sans',
 });
 
 export const metadata: Metadata = {
@@ -43,7 +43,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} font-sans h-full bg-slate-950 text-slate-100 antialiased`}>
+      <body className={`${publicSans.variable} font-sans h-full bg-slate-950 text-slate-100 antialiased`}>
         <LayoutClientWrapper>{children}</LayoutClientWrapper>
       </body>
     </html>

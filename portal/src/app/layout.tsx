@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
+import { Public_Sans } from "next/font/google";
 import "./globals.css";
 
+const publicSans = Public_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-public-sans",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "DVLA Central Enterprise Gateway | Republic of Ghana",
-  description: "Official Driver and Vehicle Licensing Authority Central Administration Gateway & Enterprise Microservices Hub.",
+  title: "DVLA Administration Portal | Republic of Ghana",
+  description: "Official Driver and Vehicle Licensing Authority Administration Portal.",
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",
@@ -17,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={publicSans.variable}>
       <head>
         <link rel="icon" href="/logo.png" type="image/png" sizes="any" />
         <link rel="shortcut icon" href="/logo.png" type="image/png" />

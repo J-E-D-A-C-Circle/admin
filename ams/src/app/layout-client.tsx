@@ -14,13 +14,17 @@ export default function LayoutClientWrapper({ children }: { children: React.Reac
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [authed, setAuthed] = useState(false);
   const isLoginPage = pathname === '/login';
 
   useEffect(() => {
-    // Basic route protection on mount
+    // Strict route protection before rendering any protected screen
     const token = localStorage.getItem('dams_token');
     if (!token && !isLoginPage) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      setAuthed(false);
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    } else {
+      setAuthed(!!token);
     }
   }, [pathname, isLoginPage, router]);
 
@@ -30,6 +34,10 @@ export default function LayoutClientWrapper({ children }: { children: React.Reac
         <div className="h-full flex items-center justify-center bg-slate-950">{children}</div>
       </ThemeProvider>
     );
+  }
+
+  if (!authed) {
+    return null;
   }
 
   return (
