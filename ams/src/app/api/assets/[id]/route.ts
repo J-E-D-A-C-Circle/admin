@@ -15,7 +15,7 @@ const updateAssetSchema = z.object({
   engineNumber: z.string().optional().nullable(),
   purchaseValue: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  status: z.enum(['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Disposed']),
+  status: z.enum(['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Obsolete']),
   assignedEmployeeId: z.number().int().positive().optional().nullable(),
 });
 
@@ -88,7 +88,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
-    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer' && caller.role !== 'Station Manager') {
+    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {
       return forbiddenResponse('Permission denied to update assets');
     }
 
@@ -107,17 +107,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'Asset not found' }, { status: 404 });
     }
 
-    // Role-based verification
-    if (caller.role === 'Station Manager' && existing.stationId !== caller.stationId) {
-      return forbiddenResponse('Station Managers can only update assets within their station');
-    }
-
     const updated = await db.transaction(async (tx) => {
       // Update Asset details
+      const rawPv = rest.purchaseValue != null ? String(rest.purchaseValue).trim() : '';
+      const normalizedPurchaseValue =
+        rawPv !== '' && Number.isFinite(Number(rawPv)) ? Number(rawPv).toFixed(2) : null;
+
       await tx
         .update(assets)
         .set({
           ...rest,
+          purchaseValue: normalizedPurchaseValue,
           status,
           assignedEmployeeId: assignedEmployeeId ?? null,
         })

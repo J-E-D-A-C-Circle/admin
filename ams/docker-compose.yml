@@ -49,9 +49,11 @@ services:
     environment:
       - HOSTNAME=0.0.0.0
       - DATABASE_URL=mysql://dams_user:dams_password@ams-db:3306/dams_db
-      - JWT_SECRET=super-secure-dvla-dams-jwt-secret-key-2026
+      - JWT_SECRET=${JWT_SECRET:-super-secure-dvla-dams-jwt-secret-key-2026}
       - PORT=3001
       - NODE_ENV=production
+    volumes:
+      - dams_uploads:/app/public/uploads
     depends_on:
       ams-db:
         condition: service_healthy
@@ -61,6 +63,7 @@ services:
 
 volumes:
   dams_db_data:
+  dams_uploads:
 
 networks:
   dams-network:

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
     const conditions = [
-      ne(assets.status, 'Disposed'),
+      ne(assets.status, 'Obsolete'),
       or(
         isNull(assets.lastVerificationDate),
         lte(assets.lastVerificationDate, ninetyDaysAgo)

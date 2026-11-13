@@ -3,12 +3,14 @@ import { db } from '@/db';
 import { users, roles, regions, stations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyAuth, forbiddenResponse, unauthorizedResponse } from '@/lib/auth-helper';
+import { ensureSchema } from '@/lib/ensureSchema';
 
 export async function GET(req: NextRequest) {
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
     if (caller.role !== 'Super Admin') return forbiddenResponse('Access restricted to Super Admins');
+    await ensureSchema();
 
     const allUsers = await db
       .select({
@@ -22,6 +24,8 @@ export async function GET(req: NextRequest) {
         regionName: regions.name,
         stationId: users.stationId,
         stationName: stations.name,
+        isActive: users.isActive,
+        lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
       })
       .from(users)

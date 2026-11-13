@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
 import { api } from '@/lib/api';
 import { formatDate, calcDepreciation } from '@/lib/utils';
 import {
@@ -123,7 +124,37 @@ export default function AssetDetailPage() {
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-semibold">Back to Registry</span>
         </button>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {asset.status !== 'Obsolete' && (
+            <>
+              <Link
+                href={`/verifications?assetId=${encodeURIComponent(asset.assetId)}`}
+                className="px-3.5 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors text-sm flex items-center space-x-2"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                <span>Verify Asset</span>
+              </Link>
+              {asset.categoryName === 'Vehicles' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('maintenance');
+                    document.getElementById('asset-detail-tabs')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-semibold rounded-lg transition-colors text-sm flex items-center space-x-2"
+                >
+                  <Wrench className="w-4 h-4 text-amber-400" />
+                  <span>Log Maintenance</span>
+                </button>
+              )}
+              <Link
+                href={`/transfers?assetId=${encodeURIComponent(asset.assetId)}`}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-semibold rounded-lg transition-colors text-sm flex items-center space-x-2"
+              >
+                <span>Transfer Asset</span>
+              </Link>
+            </>
+          )}
           <Link
             href={`/assets/${asset.assetId}/label`}
             target="_blank"
@@ -166,22 +197,66 @@ export default function AssetDetailPage() {
         </div>
 
         {/* Small QR Code Preview */}
-        <div className="flex-shrink-0 bg-white p-3 rounded-xl border border-slate-850 flex items-center justify-center self-start md:self-center shadow-md">
-          <Link href={`/assets/${asset.assetId}/label`} target="_blank">
-            <div className="relative group cursor-pointer">
-              <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-slate-900/0 transition-colors flex items-center justify-center rounded text-[10px] text-slate-950 font-bold"></div>
-              {/* Fallback rendering of QR code visually */}
-              <div className="w-20 h-20 border-2 border-slate-950 flex flex-col items-center justify-center text-slate-950 p-1 font-black">
-                <span className="text-[10px] leading-none text-center">QR LABEL</span>
-                <span className="text-[7px] text-slate-500 mt-1 uppercase font-mono">{asset.assetId.slice(-6)}</span>
-              </div>
-            </div>
+        <div className="flex-shrink-0 bg-white p-2.5 rounded-xl border border-slate-800 flex flex-col items-center justify-center self-start md:self-center shadow-md">
+          <Link href={`/assets/${asset.assetId}/label`} target="_blank" className="group flex flex-col items-center">
+            <QRCodeSVG
+              value={typeof window !== 'undefined' ? `${window.location.origin}/assets/${asset.assetId}` : `/assets/${asset.assetId}`}
+              size={84}
+              level="M"
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+            />
+            <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-emerald-700 group-hover:underline">
+              Print Label
+            </span>
           </Link>
         </div>
       </div>
 
+      {/* Scan Summary Highlights: Description/Specifications, Employee/Department, Station */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-amber-500 mb-1">
+            Description / Specifications
+          </p>
+          <p className="text-sm text-slate-200 font-medium leading-relaxed line-clamp-3">
+            {asset.description || [asset.brand, asset.model, asset.subcategoryName].filter(Boolean).join(' • ') || 'No description provided'}
+          </p>
+          <p className="mt-2 text-xs text-slate-400 font-mono">
+            S/N: {asset.serialNumber || 'N/A'}
+            {(asset.brand || asset.model) ? ` • ${[asset.brand, asset.model].filter(Boolean).join(' ')}` : ''}
+          </p>
+        </div>
+
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
+            Employee / Department
+          </p>
+          <p className="text-sm text-white font-bold">
+            {asset.assignedEmployeeName
+              ? `${asset.assignedEmployeeName}${asset.assignedEmployeeIdCode ? ` (${asset.assignedEmployeeIdCode})` : ''}`
+              : 'Unassigned'}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Department: <span className="text-slate-200 font-medium">{asset.departmentName || 'N/A'}</span>
+          </p>
+        </div>
+
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-sky-400 mb-1">
+            Station
+          </p>
+          <p className="text-sm text-white font-bold">
+            {asset.stationName || 'N/A'}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Region: <span className="text-slate-200 font-medium">{asset.regionName || 'N/A'}</span>
+          </p>
+        </div>
+      </div>
+
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-800 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div id="asset-detail-tabs" className="flex border-b border-slate-800 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => setActiveTab('specs')}
           className={`py-3 px-6 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors ${

@@ -38,7 +38,7 @@ CREATE TABLE `asset_categories` (
 
 LOCK TABLES `asset_categories` WRITE;
 /*!40000 ALTER TABLE `asset_categories` DISABLE KEYS */;
-INSERT INTO `asset_categories` VALUES (1,'IT Equipment','IT'),(2,'Furniture','FUR'),(3,'Vehicles','VEH'),(4,'Electrical Equipment','ELE'),(5,'Security Equipment','SEC'),(6,'Office Equipment','OFF');
+INSERT INTO `asset_categories` VALUES (1,'IT Equipment','IT'),(2,'Furniture','FUR'),(3,'Vehicles','VEH'),(4,'Electrical Equipment','ELE'),(5,'Security Equipment','SEC'),(6,'Office Equipment','OFF'),(7,'Stationary','STN');
 /*!40000 ALTER TABLE `asset_categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -52,7 +52,7 @@ DROP TABLE IF EXISTS `asset_history`;
 CREATE TABLE `asset_history` (
   `id` int NOT NULL AUTO_INCREMENT,
   `asset_id` varchar(50) NOT NULL,
-  `action_type` enum('Created','Updated','StationChange','DepartmentChange','EmployeeReassignment','StatusChange','Disposed','MaintenanceLogged') NOT NULL,
+  `action_type` enum('Created','Updated','StationChange','DepartmentChange','EmployeeReassignment','StatusChange','Obsolete','MaintenanceLogged') NOT NULL,
   `description` text NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_id` int NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE `asset_subcategories` (
 
 LOCK TABLES `asset_subcategories` WRITE;
 /*!40000 ALTER TABLE `asset_subcategories` DISABLE KEYS */;
-INSERT INTO `asset_subcategories` VALUES (1,1,'Laptop','LAP'),(2,1,'Desktop','DES'),(3,1,'Printer','PRI'),(4,1,'Router','RTR'),(5,1,'Switch','SWT'),(6,1,'Server','SRV'),(7,2,'Chair','CHA'),(8,2,'Table','TAB'),(9,2,'Cabinet','CAB'),(10,3,'Pickup','PIC'),(11,3,'SUV','SUV'),(12,3,'Motorcycle','MOT'),(13,4,'Generator','GEN'),(14,4,'UPS','UPS'),(15,4,'Air Conditioner','AC'),(16,5,'CCTV Camera','CCT'),(17,5,'Access Control','ACS'),(18,5,'Metal Detector','MET'),(19,6,'Shredder','SHR'),(20,6,'Projector','PRJ');
+INSERT INTO `asset_subcategories` VALUES (1,1,'Laptop','LAP'),(2,1,'Desktop','DES'),(3,1,'Printer','PRI'),(4,1,'Router','RTR'),(5,1,'Switch','SWT'),(6,1,'Server','SRV'),(7,2,'Chair','CHA'),(8,2,'Table','TAB'),(9,2,'Cabinet','CAB'),(10,3,'Pickup','PIC'),(11,3,'SUV','SUV'),(12,3,'Motorcycle','MOT'),(13,4,'Generator','GEN'),(14,4,'UPS','UPS'),(15,4,'Air Conditioner','AC'),(16,5,'CCTV Camera','CCT'),(17,5,'Access Control','ACS'),(18,5,'Metal Detector','MET'),(19,6,'Shredder','SHR'),(20,6,'Projector','PRJ'),(21,7,'Paper & Envelopes','PAP'),(22,7,'Toners & Ink','TON'),(23,7,'Pens & Markers','PEN'),(24,7,'Files & Folders','FIL'),(25,7,'Forms & Registers','FRM');
 /*!40000 ALTER TABLE `asset_subcategories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -210,13 +210,13 @@ CREATE TABLE `assets` (
   `serial_number` varchar(100) NOT NULL,
   `license_plate` varchar(50) DEFAULT NULL,
   `engine_number` varchar(100) DEFAULT NULL,
-  `purchase_value` varchar(20) DEFAULT NULL,
+  `purchase_value` decimal(14,2) DEFAULT NULL,
   `description` text,
   `region_id` int NOT NULL,
   `station_id` int NOT NULL,
   `department_id` int NOT NULL,
   `assigned_employee_id` int DEFAULT NULL,
-  `status` enum('Active','Under_Maintenance','Damaged','Missing','Disposed') NOT NULL DEFAULT 'Active',
+  `status` enum('Active','Under_Maintenance','Damaged','Missing','Obsolete') NOT NULL DEFAULT 'Active',
   `acquisition_date` datetime NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -454,7 +454,7 @@ CREATE TABLE `roles` (
 
 LOCK TABLES `roles` WRITE;
 /*!40000 ALTER TABLE `roles` DISABLE KEYS */;
-INSERT INTO `roles` VALUES (1,'Super Admin','Full system access'),(2,'Regional Manager','Manages assets within a region'),(3,'Station Manager','Manages assets at a station'),(4,'Asset Officer','Creates, updates and verifies assets'),(5,'Auditor','Read-only access to all records');
+INSERT INTO `roles` VALUES (1,'Super Admin','Full system access'),(4,'Asset Officer','Creates, updates and verifies assets'),(5,'Auditor','Read-only access to all records');
 /*!40000 ALTER TABLE `roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -500,6 +500,8 @@ CREATE TABLE `users` (
   `role_id` int NOT NULL,
   `region_id` int DEFAULT NULL,
   `station_id` int DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_username_unique` (`username`),
@@ -513,7 +515,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Super Admin User','admin@dvla.gov.gh',1,NULL,NULL,'2026-10-27 11:42:07'),(2,'rm_accra','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Accra Regional Manager','rm.accra@dvla.gov.gh',2,1,NULL,'2026-10-27 11:42:07'),(3,'sm_tema','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Tema Station Manager','sm.tema@dvla.gov.gh',3,NULL,2,'2026-10-27 11:42:07'),(4,'officer','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Asset Officer One','officer@dvla.gov.gh',4,NULL,NULL,'2026-10-27 11:42:07'),(5,'auditor','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','National Auditor','auditor@dvla.gov.gh',5,NULL,NULL,'2026-10-27 11:42:07');
+INSERT INTO `users` VALUES (1,'admin','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Super Admin User','admin@dvla.gov.gh',1,NULL,NULL,1,NULL,'2026-10-27 11:42:07'),(4,'officer','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','Asset Officer One','officer@dvla.gov.gh',4,NULL,NULL,1,NULL,'2026-10-27 11:42:07'),(5,'auditor','$2a$12$Zn3N2KDYn7q4/d1rhPfD8OpWc5rVi8hcsNxi0uYAJwFbcfMmzmyC2','National Auditor','auditor@dvla.gov.gh',5,NULL,NULL,1,NULL,'2026-10-27 11:42:07');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

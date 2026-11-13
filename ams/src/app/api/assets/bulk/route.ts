@@ -10,7 +10,7 @@ const bulkEditSchema = z.object({
   assetIds: z.array(z.string()).min(1),
   updates: z.object({
     departmentId: z.number().int().positive().optional(),
-    status: z.enum(['Active', 'Under_Maintenance', 'Disposed']).optional(),
+    status: z.enum(['Active', 'Under_Maintenance', 'Obsolete']).optional(),
   }).refine((data) => data.departmentId !== undefined || data.status !== undefined, {
     message: "At least one field to update must be provided",
   })
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!caller) return unauthorizedResponse();
     
     // Check role, for simplicity we allow Admins and Asset Officers
-    if (caller.role !== 'Super Admin' && caller.role !== 'Regional Manager' && caller.role !== 'Asset Officer') {
+    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {
       return forbiddenResponse('Permission denied to batch edit assets');
     }
 
@@ -40,13 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No valid assets found' }, { status: 404 });
     }
 
-    const validAssets = caller.role === 'Regional Manager'
-      ? existingAssets.filter(a => a.regionId === caller.regionId)
-      : existingAssets;
-
-    if (validAssets.length === 0) {
-      return forbiddenResponse('No valid assets in your region to edit');
-    }
+    const validAssets = existingAssets;
 
     const validAssetIds = validAssets.map(a => a.assetId);
 

@@ -60,16 +60,18 @@ export async function GET(req: NextRequest) {
           transferDate: assetTransfers.transferDate,
           reason: assetTransfers.reason,
           transferredBy: transferUser.name,
+          transferredByUsername: transferUser.username,
           fromRegion: fromRegion.name,
           toRegion: toRegion.name,
           fromStation: fromStation.name,
           toStation: toStation.name,
           fromDepartment: fromDept.name,
           toDepartment: toDept.name,
+          previousEmployee: prevEmp.name,
+          newEmployee: newEmp.name,
           status: assetTransfers.status,
           approvedByUserId: assetTransfers.approvedByUserId,
           approvalDate: assetTransfers.approvalDate,
-          signatureUrl: assetTransfers.signatureUrl,
         })
         .from(assetTransfers)
         .leftJoin(assets, eq(assetTransfers.assetId, assets.assetId))
@@ -104,7 +106,7 @@ export async function POST(req: NextRequest) {
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
-    if (caller.role !== 'Super Admin' && caller.role !== 'Regional Manager' && caller.role !== 'Asset Officer') {
+    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {
       return forbiddenResponse('Permission denied to initiate asset transfers');
     }
 
@@ -122,13 +124,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Asset not found' }, { status: 404 });
     }
 
-    // Regional Manager scope
-    if (caller.role === 'Regional Manager' && existing.regionId !== caller.regionId) {
-      return forbiddenResponse('Regional Managers can only transfer assets within their region');
-    }
+    // Fetch lookup names for a clear "From -> To" audit trail
+    const [allRegions, allStations, allDepts, allEmps] = await Promise.all([
+      db.select({ id: regions.id, name: regions.name }).from(regions),
+      db.select({ id: stations.id, name: stations.name }).from(stations),
+      db.select({ id: departments.id, name: departments.name }).from(departments),
+      db.select({ id: employees.id, name: employees.name }).from(employees),
+    ]);
+    const regName = (id: number | null) => allRegions.find((r) => r.id === id)?.name || `Region #${id}`;
+    const staName = (id: number | null) => allStations.find((s) => s.id === id)?.name || `Station #${id}`;
+    const deptName = (id: number | null) => allDepts.find((d) => d.id === id)?.name || `Dept #${id}`;
+    const empName = (id: number | null | undefined) => (id ? allEmps.find((e) => e.id === id)?.name || `Emp #${id}` : 'Unassigned');
+
+    const now = new Date();
+    const isSameStation = existing.stationId === toStationId;
+    const isSameDept = existing.departmentId === toDepartmentId;
+    const actionType = !isSameStation
+      ? 'StationChange'
+      : !isSameDept
+        ? 'DepartmentChange'
+        : 'EmployeeReassignment';
+
+    const fromSummary = `${regName(existing.regionId)} / ${staName(existing.stationId)} / ${deptName(existing.departmentId)} / ${empName(existing.assignedEmployeeId)}`;
+    const toSummary = `${regName(toRegionId)} / ${staName(toStationId)} / ${deptName(toDepartmentId)} / ${empName(newEmployeeId ?? null)}`;
 
     const result = await db.transaction(async (tx) => {
-      // 1. Insert Transfer record (Pending by default)
+      // 1. Insert completed Transfer record (no separate approval needed)
       const [inserted] = await tx.insert(assetTransfers).values({
         assetId,
         fromRegionId: existing.regionId,
@@ -141,20 +162,44 @@ export async function POST(req: NextRequest) {
         newEmployeeId: newEmployeeId ?? null,
         reason,
         transferredByUserId: caller.sub,
-        status: 'Pending',
+        transferDate: now,
+        status: 'Approved',
+        approvedByUserId: caller.sub,
+        approvalDate: now,
       });
 
-      // 2. Create Notification for pending transfer
+      // 2. Immediately update Asset location & custodian
+      await tx
+        .update(assets)
+        .set({
+          regionId: toRegionId,
+          stationId: toStationId,
+          departmentId: toDepartmentId,
+          assignedEmployeeId: newEmployeeId ?? null,
+          updatedAt: now,
+        })
+        .where(eq(assets.assetId, assetId));
+
+      // 3. Log detailed From -> To trail in assetHistory
+      await tx.insert(assetHistory).values({
+        assetId,
+        actionType,
+        description: `Transferred by ${caller.username} on ${now.toISOString()}: From [${fromSummary}] → To [${toSummary}]. Reason: ${reason}`,
+        userId: caller.sub,
+        createdAt: now,
+      });
+
+      // 4. Create Notification
       await tx.insert(notifications).values({
         type: 'AssetTransferred',
-        message: `A transfer for Asset ${existing.name} (${assetId}) has been initiated and is pending approval.`,
+        message: `Asset ${existing.name} (${assetId}) transferred by ${caller.username}: From ${staName(existing.stationId)} (${deptName(existing.departmentId)}) → To ${staName(toStationId)} (${deptName(toDepartmentId)}).`,
         assetId,
       });
 
       return { transferId: inserted.insertId };
     });
 
-    await logAudit('Transferred Asset', caller.sub, req, assetId);
+    await logAudit('Transferred Asset', caller.sub, req, `${assetId}: From [${fromSummary}] -> To [${toSummary}]`);
     return NextResponse.json({ transferId: result.transferId, success: true }, { status: 201 });
   } catch (err: any) {
     console.error('Transfer asset error:', err);

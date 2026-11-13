@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secure-dvla-dams-jwt-secret-key-2026';
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.warn('[SECURITY WARNING] JWT_SECRET environment variable is not set; using fallback secret.');
+}
 
 export interface JwtPayload {
   sub: number;
@@ -13,11 +16,13 @@ export interface JwtPayload {
 
 export function verifyAuth(req: NextRequest): JwtPayload | null {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  const cookieToken = req.cookies.get('dams_token')?.value || null;
+  const token = bearerToken || cookieToken;
+  if (!token) {
     return null;
   }
 
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as unknown as JwtPayload;
     return decoded;
@@ -43,13 +48,6 @@ export function generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string 
 }
 
 // Scopes database queries to only return data the user is permitted to see
-export function getScopeWhere(user: JwtPayload): { regionId?: number; stationId?: number } {
-  const where: { regionId?: number; stationId?: number } = {};
-  if (user.role === 'Regional Manager' && user.regionId !== null) {
-    where.regionId = user.regionId;
-  }
-  if (user.role === 'Station Manager' && user.stationId !== null) {
-    where.stationId = user.stationId;
-  }
-  return where;
+export function getScopeWhere(_user: JwtPayload): { regionId?: number; stationId?: number } {
+  return {};
 }

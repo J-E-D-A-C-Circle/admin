@@ -277,7 +277,7 @@ export default function VerificationsPage() {
       fetchVerifications();
       fetchStats();
     } catch (err: any) {
-      alert(err.message || 'Failed to verify');
+      setError(err.message || 'Failed to verify');
     }
   };
 

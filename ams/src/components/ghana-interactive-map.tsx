@@ -487,7 +487,7 @@ export function GhanaInteractiveMap({
       if (!stats[sta]) {
         stats[sta] = { total: 0, inService: 0, maintenance: 0, missing: 0, fleet: 0 };
       }
-      if (a.status !== 'Disposed') {
+      if (a.status !== 'Obsolete') {
         stats[sta].total++;
         if (a.status === 'In Service') stats[sta].inService++;
         if (a.status === 'In Maintenance') stats[sta].maintenance++;
@@ -1189,7 +1189,7 @@ export function GhanaInteractiveMap({
                       ? activeStationStats?.total || 0
                       : selectedRegion
                       ? activeRegionStats?.total || 0
-                      : assets.filter((a) => a.status !== 'Disposed').length}
+                      : assets.filter((a) => a.status !== 'Obsolete').length}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">

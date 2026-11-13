@@ -36,8 +36,6 @@ async function main() {
   // 1. Roles
   const rolesData = [
     { name: 'Super Admin', description: 'Full system access' },
-    { name: 'Regional Manager', description: 'Manages assets within a region' },
-    { name: 'Station Manager', description: 'Manages assets at a station' },
     { name: 'Asset Officer', description: 'Creates, updates and verifies assets' },
     { name: 'Auditor', description: 'Read-only access to all records' },
   ];
@@ -141,6 +139,7 @@ async function main() {
     { name: 'Electrical Equipment', code: 'ELE' },
     { name: 'Security Equipment', code: 'SEC' },
     { name: 'Office Equipment', code: 'OFF' },
+    { name: 'Stationary', code: 'STN' },
   ];
   const catsMap: Record<string, number> = {};
   for (const c of categoryData) {
@@ -177,6 +176,11 @@ async function main() {
     { categoryCode: 'SEC', name: 'Metal Detector', code: 'MET' },
     { categoryCode: 'OFF', name: 'Shredder', code: 'SHR' },
     { categoryCode: 'OFF', name: 'Projector', code: 'PRJ' },
+    { categoryCode: 'STN', name: 'Paper & Envelopes', code: 'PAP' },
+    { categoryCode: 'STN', name: 'Toners & Ink', code: 'TON' },
+    { categoryCode: 'STN', name: 'Pens & Markers', code: 'PEN' },
+    { categoryCode: 'STN', name: 'Files & Folders', code: 'FIL' },
+    { categoryCode: 'STN', name: 'Forms & Registers', code: 'FRM' },
   ];
   const subcatsMap: Record<string, number> = {};
   for (const s of subcatData) {
@@ -227,13 +231,18 @@ async function main() {
 
   // 8. Users (password: "password123")
   const passwordHash = await bcrypt.hash('password123', 12);
-  const userData = [
-    { username: 'admin', name: 'Super Admin User', email: 'admin@dvla.gov.gh', roleName: 'Super Admin' },
-    { username: 'rm_accra', name: 'Accra Regional Manager', email: 'rm.accra@dvla.gov.gh', roleName: 'Regional Manager', regionCode: 'GAR' },
-    { username: 'sm_tema', name: 'Tema Station Manager', email: 'sm.tema@dvla.gov.gh', roleName: 'Station Manager', stationName: 'Tema' },
-    { username: 'officer', name: 'Asset Officer One', email: 'officer@dvla.gov.gh', roleName: 'Asset Officer' },
-    { username: 'auditor', name: 'National Auditor', email: 'auditor@dvla.gov.gh', roleName: 'Auditor' },
-  ];
+  const userData: Array<{
+    username: string;
+    name: string;
+    email: string;
+    roleName: string;
+    regionCode?: string;
+    stationName?: string;
+  }> = [
+      { username: 'admin', name: 'Super Admin User', email: 'admin@dvla.gov.gh', roleName: 'Super Admin' },
+      { username: 'officer', name: 'Asset Officer One', email: 'officer@dvla.gov.gh', roleName: 'Asset Officer' },
+      { username: 'auditor', name: 'National Auditor', email: 'auditor@dvla.gov.gh', roleName: 'Auditor' },
+    ];
   const usersMap: Record<string, number> = {};
   for (const u of userData) {
     const existing = await db.query.users.findFirst({

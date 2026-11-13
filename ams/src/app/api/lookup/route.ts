@@ -3,11 +3,13 @@ import { db } from '@/db';
 import { regions, stations, departments, employees, assetCategories, assetSubcategories, roles } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-helper';
+import { ensureSchema } from '@/lib/ensureSchema';
 
 export async function GET(req: NextRequest) {
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
+    await ensureSchema();
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');

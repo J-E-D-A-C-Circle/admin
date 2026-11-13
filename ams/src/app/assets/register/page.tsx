@@ -472,7 +472,7 @@ export default function AssetRegisterPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Assigned Employee
+                  Assigned Employee <span className="text-slate-500 font-normal normal-case">(Optional)</span>
                 </label>
                 <button
                   type="button"

@@ -13,5 +13,6 @@ const conn = globalForMysql.conn ?? mysql.createPool(databaseUrl);
 if (process.env.NODE_ENV !== 'production') globalForMysql.conn = conn;
 
 export const db = drizzle(conn, { schema, mode: 'default' });
+export const poolConnection = conn;
 export type DbClient = typeof db;
 export * as schema from './schema';

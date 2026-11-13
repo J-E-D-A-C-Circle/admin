@@ -266,7 +266,7 @@ export default function AssetsPage() {
         notes: disposeNotes || null,
       });
 
-      setDisposeSuccess('Asset disposed successfully!');
+      setDisposeSuccess('Asset marked as obsolete successfully!');
       
       // Reload drawer details and main asset list
       const [asset, history] = await Promise.all([
@@ -371,14 +371,27 @@ export default function AssetsPage() {
     setDrawerTab('edit');
   };
 
-  const handleDeleteAsset = async (assetId: string) => {
-    if (confirm(`Are you sure you want to permanently delete asset ${assetId}? This action cannot be undone.`)) {
-      try {
-        await api.deleteAsset(assetId);
-        loadAssets();
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete asset.');
-      }
+  const [deleteAssetTarget, setDeleteAssetTarget] = useState<string | null>(null);
+  const [deletingAsset, setDeletingAsset] = useState(false);
+  const [deleteAssetError, setDeleteAssetError] = useState('');
+
+  const handleDeleteAsset = (assetId: string) => {
+    setDeleteAssetError('');
+    setDeleteAssetTarget(assetId);
+  };
+
+  const confirmDeleteAsset = async () => {
+    if (!deleteAssetTarget) return;
+    setDeletingAsset(true);
+    setDeleteAssetError('');
+    try {
+      await api.deleteAsset(deleteAssetTarget);
+      setDeleteAssetTarget(null);
+      loadAssets();
+    } catch (err: any) {
+      setDeleteAssetError(err.message || 'Failed to delete asset.');
+    } finally {
+      setDeletingAsset(false);
     }
   };
 
@@ -484,8 +497,8 @@ export default function AssetsPage() {
         return <Badge variant="destructive">Damaged</Badge>;
       case 'Missing':
         return <Badge variant="warning">Missing</Badge>;
-      case 'Disposed':
-        return <Badge variant="secondary">Disposed</Badge>;
+      case 'Obsolete':
+        return <Badge variant="secondary">Obsolete</Badge>;
       default:
         return <Badge variant="outline">{s.replace('_', ' ')}</Badge>;
     }
@@ -604,7 +617,7 @@ export default function AssetsPage() {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Regional Manager') && (
+            {(userRole === 'Super Admin' || userRole === 'Asset Officer') && (
               <Button
                 size="sm"
                 variant="default"
@@ -711,7 +724,7 @@ export default function AssetsPage() {
               <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
               <SelectItem value="Damaged">Damaged</SelectItem>
               <SelectItem value="Missing">Missing</SelectItem>
-              <SelectItem value="Disposed">Disposed</SelectItem>
+              <SelectItem value="Obsolete">Obsolete</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -807,7 +820,7 @@ export default function AssetsPage() {
                     <button onClick={() => window.open(`/assets/${asset.assetId}/label`, '_blank')} className="p-1.5 text-slate-400 hover:text-amber-500 rounded-md hover:bg-slate-800 transition-colors">
                       <QrCode className="w-4 h-4" />
                     </button>
-                    {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && (
+                    {(userRole === 'Super Admin' || userRole === 'Asset Officer') && (
                       <button onClick={() => openDrawerToEdit(asset.assetId)} className="p-1.5 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-colors">
                         <Edit className="w-4 h-4" />
                       </button>
@@ -913,7 +926,7 @@ export default function AssetsPage() {
                             <QrCode className="w-4 h-4" />
                           </button>
                           
-                          {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && (
+                          {(userRole === 'Super Admin' || userRole === 'Asset Officer') && (
                             <button
                               onClick={() => openDrawerToEdit(asset.assetId)}
                               title="Edit Asset"
@@ -1116,7 +1129,7 @@ export default function AssetsPage() {
                       Maintenance
                     </button>
                   )}
-                  {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && drawerAsset?.status !== 'Disposed' && (
+                  {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && drawerAsset?.status !== 'Obsolete' && (
                     <button
                       onClick={() => setDrawerTab('edit')}
                       className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
@@ -1128,7 +1141,7 @@ export default function AssetsPage() {
                       Update Asset
                     </button>
                   )}
-                  {(userRole === 'Super Admin' || userRole === 'Asset Officer') && drawerAsset?.status !== 'Disposed' && (
+                  {(userRole === 'Super Admin' || userRole === 'Asset Officer') && drawerAsset?.status !== 'Obsolete' && (
                     <button
                       onClick={() => setDrawerTab('audit')}
                       className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
@@ -1140,7 +1153,7 @@ export default function AssetsPage() {
                       Audit & Verify
                     </button>
                   )}
-                  {userRole === 'Super Admin' && drawerAsset?.status !== 'Disposed' && (
+                  {userRole === 'Super Admin' && drawerAsset?.status !== 'Obsolete' && (
                     <button
                       onClick={() => setDrawerTab('dispose')}
                       className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
@@ -1149,7 +1162,7 @@ export default function AssetsPage() {
                           : 'border-transparent text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      Disposal
+                      Obsolescence
                     </button>
                   )}
                 </div>
@@ -1428,13 +1441,13 @@ export default function AssetsPage() {
                             <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
                             <SelectItem value="Damaged">Damaged</SelectItem>
                             <SelectItem value="Missing">Missing</SelectItem>
-                            <SelectItem value="Disposed">Disposed</SelectItem>
+                            <SelectItem value="Obsolete">Obsolete</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">Assigned Employee</label>
+                        <label className="text-xs font-semibold text-slate-300">Assigned Employee (Optional)</label>
                         <Select value={updateEmployeeId || 'unassigned'} onValueChange={(val) => setUpdateEmployeeId(val === 'unassigned' ? '' : val)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Unassigned" />
@@ -1527,7 +1540,7 @@ export default function AssetsPage() {
                   {drawerTab === 'maintenance' && drawerAsset && (
                     <div className="space-y-6">
                       {/* Log Service Form */}
-                      {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && (
+                      {(userRole === 'Super Admin' || userRole === 'Asset Officer') && (
                         <form onSubmit={handleCreateMaintenanceSubmit} className="p-4 bg-slate-950/30 border border-slate-800 rounded-xl space-y-4">
                           <h4 className="text-xs font-bold text-white uppercase tracking-wider">Log New Service Record</h4>
                           {maintSuccess && (
@@ -1653,7 +1666,7 @@ export default function AssetsPage() {
                   {/* Disposal Tab */}
                   {drawerTab === 'dispose' && drawerAsset && (
                     <form onSubmit={handleDisposeAssetSubmit} className="space-y-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Record Asset Disposal</h4>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Mark Asset as Obsolete</h4>
                       {disposeSuccess && (
                         <div className="p-3 bg-emerald-950/40 border border-emerald-900/50 text-emerald-250 rounded-lg text-sm font-medium">
                           {disposeSuccess}
@@ -1665,7 +1678,7 @@ export default function AssetsPage() {
                         </div>
                       )}
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">Disposal Method *</label>
+                        <label className="text-xs font-semibold text-slate-300">Obsolescence Method *</label>
                         <Select value={disposeMethod} onValueChange={(val) => setDisposeMethod(val as 'Auction' | 'Scrapped' | 'Donated' | 'Written_Off')}>
                           <SelectTrigger className="w-full bg-slate-950 border-slate-800">
                             <SelectValue />
@@ -1691,7 +1704,7 @@ export default function AssetsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">Disposal Notes / Authorization Details</label>
+                        <label className="text-xs font-semibold text-slate-300">Obsolescence Notes / Authorization Details</label>
                         <textarea
                           rows={3}
                           value={disposeNotes}
@@ -1705,7 +1718,7 @@ export default function AssetsPage() {
                         disabled={disposeSubmitting}
                         className="w-full py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
                       >
-                        {disposeSubmitting ? 'Recording Disposal...' : 'Confirm Asset Disposal'}
+                        {disposeSubmitting ? 'Marking Obsolete...' : 'Confirm Mark Obsolete'}
                       </button>
                     </form>
                   )}
@@ -1763,7 +1776,7 @@ export default function AssetsPage() {
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="Under_Maintenance">In Maintenance</SelectItem>
-                    <SelectItem value="Disposed">Disposed</SelectItem>
+                    <SelectItem value="Obsolete">Obsolete</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1787,6 +1800,54 @@ export default function AssetsPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Delete Asset Confirmation Modal */}
+      {deleteAssetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white">Delete Asset</h3>
+              <button
+                type="button"
+                onClick={() => setDeleteAssetTarget(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {deleteAssetError && (
+                <div className="p-3 bg-red-950/40 border border-red-900/50 text-red-200 rounded-lg text-xs">
+                  {deleteAssetError}
+                </div>
+              )}
+              <p className="text-sm text-slate-300">
+                Are you sure you want to permanently delete asset{' '}
+                <span className="font-mono font-bold text-amber-400">{deleteAssetTarget}</span>? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteAssetTarget(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={deletingAsset}
+                  onClick={confirmDeleteAsset}
+                  className="bg-red-600 hover:bg-red-500 text-white"
+                >
+                  {deletingAsset ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+                  Confirm Delete
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -57,6 +57,8 @@ export const users = mysqlTable('users', {
   roleId: int('role_id').notNull().references(() => roles.id),
   regionId: int('region_id').references(() => regions.id),
   stationId: int('station_id').references(() => stations.id),
+  isActive: boolean('is_active').default(true).notNull(),
+  lastLoginAt: datetime('last_login_at'),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -83,13 +85,13 @@ export const assets = mysqlTable('assets', {
   serialNumber: varchar('serial_number', { length: 100 }).notNull().unique(),
   licensePlate: varchar('license_plate', { length: 50 }),
   engineNumber: varchar('engine_number', { length: 100 }),
-  purchaseValue: varchar('purchase_value', { length: 20 }),
+  purchaseValue: decimal('purchase_value', { precision: 14, scale: 2 }),
   description: text('description'),
   regionId: int('region_id').notNull().references(() => regions.id),
   stationId: int('station_id').notNull().references(() => stations.id),
   departmentId: int('department_id').notNull().references(() => departments.id),
   assignedEmployeeId: int('assigned_employee_id').references(() => employees.id),
-  status: mysqlEnum('status', ['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Disposed']).default('Active').notNull(),
+  status: mysqlEnum('status', ['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Obsolete']).default('Active').notNull(),
   acquisitionDate: datetime('acquisition_date').notNull(),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: datetime('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -133,7 +135,7 @@ export const assetVerifications = mysqlTable('asset_verifications', {
 export const assetHistory = mysqlTable('asset_history', {
   id: int('id').primaryKey().autoincrement(),
   assetId: varchar('asset_id', { length: 50 }).notNull().references(() => assets.assetId, { onDelete: 'cascade' }),
-  actionType: mysqlEnum('action_type', ['Created', 'Updated', 'StationChange', 'DepartmentChange', 'EmployeeReassignment', 'StatusChange', 'Disposed', 'MaintenanceLogged']).notNull(),
+  actionType: mysqlEnum('action_type', ['Created', 'Updated', 'StationChange', 'DepartmentChange', 'EmployeeReassignment', 'StatusChange', 'Obsolete', 'MaintenanceLogged']).notNull(),
   description: text('description').notNull(),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   userId: int('user_id').notNull().references(() => users.id),

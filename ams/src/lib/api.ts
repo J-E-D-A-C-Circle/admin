@@ -232,11 +232,33 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getEmployees(): Promise<any[]> {
+    const res = await fetch(`${BASE_URL}/employees`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
   async createEmployee(payload: any): Promise<any> {
     const res = await fetch(`${BASE_URL}/employees`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async updateEmployee(id: number, payload: any): Promise<any> {
+    const res = await fetch(`${BASE_URL}/employees/${id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteEmployee(id: number): Promise<any> {
+    const res = await fetch(`${BASE_URL}/employees/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
     });
     return handleResponse(res);
   },
@@ -259,6 +281,11 @@ export const api = {
 
   async getDamagedReport(): Promise<any[]> {
     const res = await fetch(`${BASE_URL}/reports/damaged`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getObsoleteReport(): Promise<any[]> {
+    const res = await fetch(`${BASE_URL}/reports/obsolete`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -311,6 +338,32 @@ export const api = {
     }
     const query = new URLSearchParams(cleanParams).toString();
     const res = await fetch(`${BASE_URL}/reports/audit-logs${query ? '?' + query : ''}`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async updateUser(id: number, payload: { username?: string; password?: string; name?: string; email?: string; roleId?: number; regionId?: number | null; stationId?: number | null; isActive?: boolean }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${BASE_URL}/auth/users/${id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async changeOwnPassword(payload: { currentPassword: string; newPassword: string }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${BASE_URL}/auth/me/password`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteUser(id: number): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${BASE_URL}/auth/users/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
     return handleResponse(res);
   },
 

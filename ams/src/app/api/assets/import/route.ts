@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'Super_Admin' && user.role !== 'National_Admin') {
+    if (user.role !== 'Super Admin' && user.role !== 'Asset Officer') {
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 });
     }
 

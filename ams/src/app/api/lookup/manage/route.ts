@@ -185,6 +185,12 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true, message: 'Lookup entry deleted successfully' });
   } catch (err: any) {
     console.error('Delete lookup error:', err);
+    if (err?.code === 'ER_ROW_IS_REFERENCED_2' || err?.errno === 1451) {
+      return NextResponse.json(
+        { message: 'Cannot delete this entry because existing assets, employees, or stations still reference it.' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
   }
 }

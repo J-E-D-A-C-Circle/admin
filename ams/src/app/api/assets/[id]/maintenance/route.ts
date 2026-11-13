@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
-    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer' && caller.role !== 'Station Manager') {
+    if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {
       return forbiddenResponse('Permission denied to log maintenance');
     }
 
@@ -84,8 +84,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         recordedByUserId: caller.sub,
       });
 
-      // Update asset status to Under_Maintenance if it isn't already (and isn't disposed)
-      if (asset.status !== 'Disposed' && asset.status !== 'Under_Maintenance') {
+      // Update asset status to Under_Maintenance if it isn't already (and isn't obsolete)
+      if (asset.status !== 'Obsolete' && asset.status !== 'Under_Maintenance') {
         await tx.update(assets).set({ status: 'Under_Maintenance', updatedAt: new Date() }).where(eq(assets.assetId, assetId));
       }
 

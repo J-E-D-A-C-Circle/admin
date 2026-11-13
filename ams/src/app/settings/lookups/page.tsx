@@ -16,7 +16,8 @@ import {
   MapPin,
   Building2,
   Layers,
-  Component
+  Component,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -27,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-type LookupType = 'categories' | 'subcategories' | 'regions' | 'stations' | 'departments';
+type LookupType = 'categories' | 'subcategories' | 'regions' | 'stations' | 'departments' | 'employees';
 
 export default function LookupsManagementPage() {
   const [activeTab, setActiveTab] = useState<LookupType>('categories');
@@ -52,6 +53,14 @@ export default function LookupsManagementPage() {
     phone: '',
   });
   const [newDepartment, setNewDepartment] = useState({ name: '' });
+  const [newEmployee, setNewEmployee] = useState({
+    employeeId: '',
+    name: '',
+    position: '',
+    departmentId: '',
+    stationId: '',
+  });
+  const [employeesList, setEmployeesList] = useState<any[]>([]);
 
   // Inline edit state
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -61,8 +70,12 @@ export default function LookupsManagementPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const data = await api.getLookups();
+      const [data, emps] = await Promise.all([
+        api.getLookups(),
+        api.getEmployees().catch(() => []),
+      ]);
       setLookups(data);
+      setEmployeesList(emps);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to load lookup data.');
     } finally {
@@ -88,7 +101,18 @@ export default function LookupsManagementPage() {
     else if (activeTab === 'departments') payload = newDepartment;
 
     try {
-      await api.createLookup(activeTab, payload);
+      if (activeTab === 'employees') {
+        await api.createEmployee({
+          employeeId: newEmployee.employeeId,
+          name: newEmployee.name,
+          position: newEmployee.position,
+          departmentId: parseInt(newEmployee.departmentId, 10),
+          stationId: parseInt(newEmployee.stationId, 10),
+        });
+        setNewEmployee({ employeeId: '', name: '', position: '', departmentId: '', stationId: '' });
+      } else {
+        await api.createLookup(activeTab, payload);
+      }
       setSuccessMsg(`New entry added successfully!`);
       // Clear forms
       setNewCategory({ name: '', code: '' });
@@ -130,7 +154,17 @@ export default function LookupsManagementPage() {
     setSubmitting(true);
 
     try {
-      await api.updateLookup(activeTab, id, editPayload);
+      if (activeTab === 'employees') {
+        await api.updateEmployee(id, {
+          employeeId: editPayload.employeeId,
+          name: editPayload.name,
+          position: editPayload.position,
+          departmentId: parseInt(String(editPayload.departmentId), 10),
+          stationId: parseInt(String(editPayload.stationId), 10),
+        });
+      } else {
+        await api.updateLookup(activeTab, id, editPayload);
+      }
       setSuccessMsg(`Entry updated successfully!`);
       setEditingId(null);
       await loadData();
@@ -141,18 +175,32 @@ export default function LookupsManagementPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this entry? Items referencing this lookup might throw errors if deleted.')) {
-      return;
-    }
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState(false);
+
+  const handleDelete = (id: number) => {
+    setDeleteTargetId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTargetId === null) return;
+    setDeletingEntry(true);
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      await api.deleteLookup(activeTab, id);
+      if (activeTab === 'employees') {
+        await api.deleteEmployee(deleteTargetId);
+      } else {
+        await api.deleteLookup(activeTab, deleteTargetId);
+      }
       setSuccessMsg('Entry deleted successfully.');
+      setDeleteTargetId(null);
       await loadData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to delete lookup entry. It might be referenced by other records.');
+      setDeleteTargetId(null);
+    } finally {
+      setDeletingEntry(false);
     }
   };
 
@@ -168,6 +216,7 @@ export default function LookupsManagementPage() {
     { id: 'regions', label: 'Regions', icon: MapPin, data: lookups.regions || [] },
     { id: 'stations', label: 'Stations', icon: Building2, data: lookups.stations || [] },
     { id: 'departments', label: 'Departments', icon: Component, data: lookups.departments || [] },
+    { id: 'employees', label: 'Employees', icon: Users, data: employeesList || [] },
   ];
 
   const currentTabInfo = tabs.find((t) => t.id === activeTab)!;
@@ -487,6 +536,72 @@ export default function LookupsManagementPage() {
                 </div>
               )}
 
+              {activeTab === 'employees' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className={labelClass}>Employee ID *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. EMP-009"
+                      value={newEmployee.employeeId}
+                      onChange={(e) => setNewEmployee((p) => ({ ...p, employeeId: e.target.value.toUpperCase() }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Kwame Boateng"
+                      value={newEmployee.name}
+                      onChange={(e) => setNewEmployee((p) => ({ ...p, name: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Position / Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Licensing Officer"
+                      value={newEmployee.position}
+                      onChange={(e) => setNewEmployee((p) => ({ ...p, position: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Station *</label>
+                    <Select
+                      value={newEmployee.stationId}
+                      onValueChange={(val) => setNewEmployee((p) => ({ ...p, stationId: val }))}
+                    >
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select station" /></SelectTrigger>
+                      <SelectContent>
+                        {lookups.stations?.map((s: any) => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Department *</label>
+                    <Select
+                      value={newEmployee.departmentId}
+                      onValueChange={(val) => setNewEmployee((p) => ({ ...p, departmentId: val }))}
+                    >
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {lookups.departments?.map((d: any) => (
+                          <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
@@ -514,7 +629,13 @@ export default function LookupsManagementPage() {
                       <th className="py-3 px-4">Name</th>
                       {activeTab !== 'departments' && (
                         <th className="py-3 px-4">
-                          {activeTab === 'stations' ? 'Region & City' : activeTab === 'subcategories' ? 'Category' : 'Code'}
+                          {activeTab === 'stations'
+                            ? 'Region & City'
+                            : activeTab === 'subcategories'
+                              ? 'Category'
+                              : activeTab === 'employees'
+                                ? 'Position & Station'
+                                : 'Code'}
                         </th>
                       )}
                       {activeTab === 'stations' && <th className="py-3 px-4">GPS Coordinates</th>}
@@ -549,8 +670,8 @@ export default function LookupsManagementPage() {
                             ) : (
                               <div>
                                 <span className="font-medium text-white block">{item.name}</span>
-                                {item.code && (
-                                  <span className="text-[10px] font-mono text-amber-400/90">{item.code}</span>
+                                {(item.code || item.employeeId) && (
+                                  <span className="text-[10px] font-mono text-amber-400/90">{item.code || item.employeeId}</span>
                                 )}
                               </div>
                             )}
@@ -599,6 +720,29 @@ export default function LookupsManagementPage() {
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                ) : activeTab === 'employees' ? (
+                                  <div className="space-y-1">
+                                    <input
+                                      type="text"
+                                      value={editPayload.position || ''}
+                                      placeholder="Position"
+                                      onChange={(e) => setEditPayload((p: any) => ({ ...p, position: e.target.value }))}
+                                      className="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none w-full"
+                                    />
+                                    <Select
+                                      value={String(editPayload.stationId)}
+                                      onValueChange={(val) => setEditPayload((p: any) => ({ ...p, stationId: parseInt(val) }))}
+                                    >
+                                      <SelectTrigger className="h-7 py-0.5 px-2 rounded bg-slate-950 border-slate-800 text-xs text-white">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {lookups.stations?.map((s: any) => (
+                                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                 ) : (
                                   <input
                                     type="text"
@@ -613,9 +757,14 @@ export default function LookupsManagementPage() {
                                     {activeTab === 'stations'
                                       ? lookups.regions?.find((r: any) => r.id === item.regionId)?.name || 'Unknown'
                                       : activeTab === 'subcategories'
-                                      ? lookups.categories?.find((c: any) => c.id === item.categoryId)?.name || 'Unknown'
-                                      : item.code}
+                                        ? lookups.categories?.find((c: any) => c.id === item.categoryId)?.name || 'Unknown'
+                                        : activeTab === 'employees'
+                                          ? `${item.position || ''} • ${item.stationName || ''}`
+                                          : item.code}
                                   </span>
+                                  {activeTab === 'employees' && item.departmentName && (
+                                    <span className="text-[10px] text-slate-500">{item.departmentName}</span>
+                                  )}
                                   {activeTab === 'stations' && item.city && (
                                     <span className="text-[10px] text-slate-500">{item.city}</span>
                                   )}
@@ -708,6 +857,49 @@ export default function LookupsManagementPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteTargetId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                <Trash2 className="w-4 h-4 text-red-400" />
+                <span>Delete Lookup Entry</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-slate-300">
+                Are you sure you want to delete this entry? Items referencing this lookup might throw errors if deleted.
+              </p>
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetId(null)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingEntry}
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-500 text-white disabled:opacity-50 inline-flex items-center space-x-1.5"
+                >
+                  {deletingEntry && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Confirm Delete</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

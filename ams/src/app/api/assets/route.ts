@@ -182,11 +182,16 @@ export async function POST(req: NextRequest) {
     try {
       const result = await db.transaction(async (tx) => {
         // Insert Asset
+        const rawPv = rest.purchaseValue != null ? String(rest.purchaseValue).trim() : '';
+        const normalizedPurchaseValue =
+          rawPv !== '' && Number.isFinite(Number(rawPv)) ? Number(rawPv).toFixed(2) : null;
+
         await tx.insert(assets).values({
           assetId,
           categoryId,
           acquisitionDate: new Date(acquisitionDate),
           ...rest,
+          purchaseValue: normalizedPurchaseValue,
           assignedEmployeeId: rest.assignedEmployeeId ?? null,
           status: 'Active',
         });

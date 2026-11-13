@@ -20,8 +20,6 @@ const DEMO_PASSWORD = 'password123';
 
 const DEMO_ACCOUNTS = [
   { username: 'admin', role: 'System Administrator' },
-  { username: 'rm_accra', role: 'Regional Manager' },
-  { username: 'sm_tema', role: 'Station Manager' },
   { username: 'officer', role: 'Asset Officer' },
   { username: 'auditor', role: 'Auditor' },
 ];
@@ -65,10 +63,12 @@ export default function LoginPage() {
       let redirectUrl = '/dashboard';
       if (typeof window !== 'undefined') {
         const searchParams = new URLSearchParams(window.location.search);
-        const redirectParam = searchParams.get('redirect');
+        const redirectParam = searchParams.get('redirect') || searchParams.get('next');
         if (redirectParam && redirectParam.startsWith('/')) {
           redirectUrl = redirectParam;
         }
+        window.location.assign(redirectUrl);
+        return;
       }
       router.push(redirectUrl);
     } catch (err: any) {

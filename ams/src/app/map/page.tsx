@@ -67,8 +67,8 @@ export default function AssetMapPage() {
     );
   }
 
-  // Active (non-disposed) asset stats
-  const activeAssets = assets.filter((a) => a.status !== 'Disposed');
+  // Active (non-obsolete) asset stats
+  const activeAssets = assets.filter((a) => a.status !== 'Obsolete');
   const fleetCount = activeAssets.filter((a) => a.categoryName === 'Vehicles').length;
   const uniqueStations = new Set(activeAssets.map((a) => a.stationName).filter(Boolean)).size;
 
@@ -77,7 +77,7 @@ export default function AssetMapPage() {
   assets.forEach((asset) => {
     const reg = asset.regionName || 'Unknown Region';
     const sta = asset.stationName || 'Unknown Station';
-    if (asset.status === 'Disposed') return;
+    if (asset.status === 'Obsolete') return;
 
     if (!regionalGroups[reg]) {
       regionalGroups[reg] = {};

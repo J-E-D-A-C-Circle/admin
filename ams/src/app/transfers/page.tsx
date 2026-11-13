@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import SignatureCanvas from 'react-signature-canvas';
 import {
   Search,
   Filter,
@@ -33,6 +32,9 @@ type Transfer = {
   toRegion: string;
   fromDepartment: string;
   toDepartment: string;
+  previousEmployee?: string | null;
+  newEmployee?: string | null;
+  transferredByUsername?: string | null;
   reason: string;
   transferDate: string;
   transferredBy: string;
@@ -68,13 +70,12 @@ export default function TransfersPage() {
 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkAssetIds, setBulkAssetIds] = useState('');
-  
-  const [showApproveModal, setShowApproveModal] = useState(false);
-  const [approveTransferId, setApproveTransferId] = useState<number | null>(null);
-  const sigCanvas = useRef<any>(null);
+  const [expandedTransferId, setExpandedTransferId] = useState<number | null>(null);
 
   const [filteredStations, setFilteredStations] = useState<any[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+  const [assetSuggestions, setAssetSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     fetchTransfers();
@@ -86,9 +87,15 @@ export default function TransfersPage() {
     if (u) {
       setUserRole(JSON.parse(u).role);
     }
+    if (typeof window !== 'undefined') {
+      const prefillId = new URLSearchParams(window.location.search).get('assetId');
+      if (prefillId) {
+        openTransferModal(prefillId);
+      }
+    }
   }, []);
 
-  const openTransferModal = (assetId: string) => {
+  const openTransferModal = async (assetId: string) => {
     setForm({
       assetId,
       toRegionId: '',
@@ -98,7 +105,21 @@ export default function TransfersPage() {
       reason: '',
     });
     setError('');
+    setShowSuggestions(false);
     setShowModal(true);
+    if (assetId.trim()) {
+      try {
+        const a = await api.getAsset(assetId.trim());
+        setForm((prev) => ({
+          ...prev,
+          toRegionId: a.regionId ? String(a.regionId) : '',
+          toStationId: a.stationId ? String(a.stationId) : '',
+          toDepartmentId: a.departmentId ? String(a.departmentId) : '',
+        }));
+      } catch {
+        // Ignore if asset not found yet
+      }
+    }
   };
 
   useEffect(() => {
@@ -161,7 +182,7 @@ export default function TransfersPage() {
     try {
       const ids = bulkAssetIds.split(',').map(id => id.trim()).filter(Boolean);
       if (ids.length === 0) throw new Error('Please enter at least one Asset ID');
-      
+
       await api.bulkTransferAssets({
         assetIds: ids,
         toRegionId: parseInt(form.toRegionId),
@@ -176,26 +197,6 @@ export default function TransfersPage() {
       fetchTransfers();
     } catch (err: any) {
       setError(err.message || 'Failed to initiate bulk transfer.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleApproveSubmit = async () => {
-    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
-      setError('Please provide a signature to approve the transfer.');
-      return;
-    }
-    setError('');
-    setSubmitting(true);
-    try {
-      const signatureDataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
-      await api.approveTransfer(approveTransferId!, signatureDataUrl);
-      setSuccessMsg('Transfer approved successfully.');
-      setShowApproveModal(false);
-      fetchTransfers();
-    } catch (err: any) {
-      setError(err.message || 'Failed to approve transfer.');
     } finally {
       setSubmitting(false);
     }
@@ -264,161 +265,187 @@ export default function TransfersPage() {
       {/* Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
         <>
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-3 px-2 py-3">
-          {transfers.map((t) => (
-            <div key={`mobile-t-${t.id}`} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
-              <div className="p-3">
-                <div className="flex justify-between items-start mb-2.5 gap-2">
-                  <div className="flex space-x-3 items-center flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <ArrowLeftRight className="w-5 h-5 text-slate-400" />
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3 px-2 py-3">
+            {transfers.map((t) => (
+              <div key={`mobile-t-${t.id}`} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                <div className="p-3">
+                  <div className="flex justify-between items-start mb-2.5 gap-2">
+                    <div className="flex space-x-3 items-center flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <ArrowLeftRight className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-slate-200 text-sm leading-tight truncate">{t.assetName}</h3>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{t.assetId}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-200 text-sm leading-tight truncate">{t.assetName}</h3>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">{t.assetId}</p>
-                    </div>
-                  </div>
-                  <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold border rounded flex-shrink-0 ${
-                    t.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                  }`}>
-                    {t.status || 'Approved'}
-                  </span>
-                </div>
-
-                <div className="bg-slate-950/30 rounded-lg p-2.5 grid grid-cols-2 gap-y-2 gap-x-2 text-xs mb-1">
-                  <div>
-                    <span className="text-slate-500 block mb-0.5">From</span>
-                    <span className="font-medium text-slate-300 block truncate">{t.fromStation}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block mb-0.5">To</span>
-                    <span className="font-medium text-slate-300 block truncate">{t.toStation}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-slate-500 block mb-0.5">Reason</span>
-                    <span className="font-medium text-slate-300 truncate block">{t.reason}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-800 px-3 py-2.5 flex items-center justify-between bg-slate-900 mt-auto">
-                <div className="text-[10px] text-slate-400 flex flex-col">
-                  <span>{new Date(t.transferDate).toLocaleDateString()}</span>
-                  <span>By: {t.transferredBy}</span>
-                </div>
-                
-                {canTransfer && (
-                  <div className="flex items-center space-x-2">
-                    {t.status === 'Pending' ? (
-                      <button
-                        onClick={() => {
-                          setApproveTransferId(t.id);
-                          setShowApproveModal(true);
-                          if (sigCanvas.current) sigCanvas.current.clear();
-                        }}
-                        className="inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/20 hover:border-transparent rounded-lg text-xs font-semibold transition-colors"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Approve</span>
-                      </button>
-                    ) : t.signatureUrl ? (
-                      <a href={t.signatureUrl} target="_blank" rel="noreferrer" className="px-3 py-1.5 text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg font-semibold hover:bg-indigo-500 hover:text-white transition-colors">
-                        View Sig
-                      </a>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">From</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">To</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Reason</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">By</th>
-                {canTransfer && (
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={canTransfer ? 7 : 6} className="px-4 py-16 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
-                  </td>
-                </tr>
-              ) : transfers.length === 0 ? (
-                <tr>
-                  <td colSpan={canTransfer ? 7 : 6} className="px-4 py-16 text-center text-slate-500">
-                    No transfers found.
-                  </td>
-                </tr>
-              ) : (
-                transfers.map((t) => (
-                  <tr key={t.id} className="border-t border-slate-800/60">
-                    <td className="px-4 py-3">
-                      <div className="font-mono text-xs text-amber-400 mb-0.5">{t.assetId}</div>
-                      <div className="text-slate-200 text-sm font-medium truncate max-w-[200px]">{t.assetName}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-slate-200">{t.fromStation}</div>
-                      <div className="text-xs text-slate-500">{t.fromRegion}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-slate-200">{t.toStation}</div>
-                      <div className="text-xs text-slate-500">{t.toRegion}</div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 max-w-[200px] truncate">{t.reason}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                        t.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold border rounded flex-shrink-0 ${t.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                       }`}>
-                        {t.status || 'Approved'}
-                      </span>
+                      {t.status === 'Approved' ? 'Completed' : (t.status || 'Completed')}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950/30 rounded-lg p-2.5 grid grid-cols-2 gap-y-2 gap-x-2 text-xs mb-1">
+                    <div>
+                      <span className="text-slate-500 block mb-0.5">From</span>
+                      <span className="font-medium text-slate-300 block truncate">{t.fromStation}</span>
+                      <span className="text-[10px] text-slate-400 block truncate">{t.fromDepartment} • {t.previousEmployee || 'Unassigned'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block mb-0.5">To</span>
+                      <span className="font-medium text-slate-300 block truncate">{t.toStation}</span>
+                      <span className="text-[10px] text-emerald-400/90 block truncate">{t.toDepartment} • {t.newEmployee || 'Unassigned'}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-slate-500 block mb-0.5">Reason</span>
+                      <span className="font-medium text-slate-300 truncate block">{t.reason}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-800 px-3 py-2.5 flex items-center justify-between bg-slate-900 mt-auto">
+                  <div className="text-[10px] text-slate-400">
+                    {t.transferredBy || 'System'}{t.transferredByUsername ? ` (@${t.transferredByUsername})` : ''} • {new Date(t.transferDate).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800">
+                  <th className="w-10 px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider"></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">From</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">To</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Reason</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-16 text-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" />
                     </td>
-                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-xs">
-                      {new Date(t.transferDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{t.transferredBy}</td>
-                    {canTransfer && (
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
-                        {t.status === 'Pending' ? (
-                          <button
-                            onClick={() => {
-                              setApproveTransferId(t.id);
-                              setShowApproveModal(true);
-                              if (sigCanvas.current) sigCanvas.current.clear();
-                            }}
-                            title="Approve Transfer"
-                            className="inline-flex items-center space-x-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/20 hover:border-transparent rounded-lg text-xs font-semibold transition-colors"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Approve</span>
-                          </button>
-                        ) : t.signatureUrl ? (
-                          <a href={t.signatureUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-400 hover:underline">
-                            View Sig
-                          </a>
-                        ) : null}
-                      </td>
-                    )}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : transfers.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-16 text-center text-slate-500">
+                      No transfers found.
+                    </td>
+                  </tr>
+                ) : (
+                  transfers.map((t) => {
+                    const isExpanded = expandedTransferId === t.id;
+                    return (
+                      <React.Fragment key={t.id}>
+                        <tr
+                          onClick={() => setExpandedTransferId(isExpanded ? null : t.id)}
+                          className="border-t border-slate-800/60 hover:bg-slate-800/30 cursor-pointer transition-colors"
+                        >
+                          <td className="px-3 py-3 text-center">
+                            <button
+                              type="button"
+                              aria-label={isExpanded ? 'Collapse transfer trail' : 'Expand transfer trail'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedTransferId(isExpanded ? null : t.id);
+                              }}
+                              className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-amber-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-mono text-xs text-amber-400 mb-0.5">{t.assetId}</div>
+                            <div className="text-slate-200 text-sm font-medium truncate max-w-[200px]">{t.assetName}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-slate-200">{t.fromStation}</div>
+                            <div className="text-xs text-slate-500">{t.fromRegion}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-slate-200">{t.toStation}</div>
+                            <div className="text-xs text-slate-500">{t.toRegion}</div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 max-w-[200px] truncate">{t.reason}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${t.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              }`}>
+                              {t.status === 'Approved' ? 'Completed' : (t.status || 'Completed')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-xs">
+                            {new Date(t.transferDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{t.transferredBy || 'System'}</td>
+                        </tr>
+
+                        {isExpanded && (
+                          <tr className="bg-slate-950/60 border-t border-slate-800/40">
+                            <td colSpan={8} className="px-6 py-4">
+                              <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-semibold uppercase tracking-wider text-amber-400">Transfer Trail</span>
+                                    <span className="text-slate-600">•</span>
+                                    <span className="text-slate-300">
+                                      Account Responsible:{' '}
+                                      <span className="font-semibold text-white">{t.transferredBy || 'System'}</span>
+                                      {t.transferredByUsername && (
+                                        <span className="ml-1 font-mono text-slate-400">(@{t.transferredByUsername})</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="text-slate-400 font-mono">
+                                    Timestamp: {new Date(t.transferDate).toLocaleString()}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                  <div className="rounded-md bg-slate-950/60 border border-slate-800/80 p-3 space-y-1">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">From (Previous)</p>
+                                    <p className="text-slate-200 font-semibold">{t.fromStation || 'N/A'}</p>
+                                    <p className="text-slate-400">Region: <span className="text-slate-200">{t.fromRegion || 'N/A'}</span></p>
+                                    <p className="text-slate-400">Department: <span className="text-slate-200">{t.fromDepartment || 'N/A'}</span></p>
+                                    <p className="text-slate-400">Custodian: <span className="text-slate-200">{t.previousEmployee || 'Unassigned'}</span></p>
+                                  </div>
+
+                                  <div className="rounded-md bg-slate-950/60 border border-emerald-900/40 p-3 space-y-1">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">To (Updated)</p>
+                                    <p className="text-white font-semibold">{t.toStation || 'N/A'}</p>
+                                    <p className="text-slate-400">Region: <span className="text-slate-200">{t.toRegion || 'N/A'}</span></p>
+                                    <p className="text-slate-400">Department: <span className="text-slate-200">{t.toDepartment || 'N/A'}</span></p>
+                                    <p className="text-slate-400">Custodian: <span className="text-emerald-300 font-medium">{t.newEmployee || 'Unassigned'}</span></p>
+                                  </div>
+                                </div>
+
+                                <div className="text-xs text-slate-400">
+                                  <span className="font-semibold text-slate-300">Reason: </span>
+                                  {t.reason}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
 
         {/* Pagination */}
@@ -466,15 +493,88 @@ export default function TransfersPage() {
                 </div>
               )}
               <div>
-                <label className={labelClass}>Asset ID *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.assetId}
-                  onChange={(e) => updateForm('assetId', e.target.value)}
-                  className={inputClass}
-                  placeholder="e.g. DVLA-ICT-001"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset ID *</label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!form.assetId.trim()) return;
+                      try {
+                        const a = await api.getAsset(form.assetId.trim());
+                        setForm((prev: any) => ({
+                          ...prev,
+                          toRegionId: a.regionId ? String(a.regionId) : prev.toRegionId,
+                          toStationId: a.stationId ? String(a.stationId) : prev.toStationId,
+                          toDepartmentId: a.departmentId ? String(a.departmentId) : prev.toDepartmentId,
+                        }));
+                        setError('');
+                      } catch {
+                        setError(`Asset "${form.assetId.trim()}" not found.`);
+                      }
+                    }}
+                    className="text-[11px] font-semibold text-amber-400 hover:text-amber-300"
+                  >
+                    Pre-fill current office &amp; dept
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={form.assetId}
+                    onChange={async (e) => {
+                      const val = e.target.value;
+                      updateForm('assetId', val);
+                      if (val.trim().length >= 2) {
+                        try {
+                          const res = await api.getAssets({ search: val.trim(), limit: 8 });
+                          setAssetSuggestions(res.data || []);
+                          setShowSuggestions(true);
+                        } catch {
+                          setAssetSuggestions([]);
+                        }
+                      } else {
+                        setAssetSuggestions([]);
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+                    className={inputClass}
+                    placeholder="Search by Asset ID, name, or serial number..."
+                  />
+                  {showSuggestions && assetSuggestions.length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 shadow-xl divide-y divide-slate-800/70">
+                      {assetSuggestions.map((a: any) => (
+                        <button
+                          key={a.assetId}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setForm((prev) => ({
+                              ...prev,
+                              assetId: a.assetId,
+                              toRegionId: a.regionId ? String(a.regionId) : prev.toRegionId,
+                              toStationId: a.stationId ? String(a.stationId) : prev.toStationId,
+                              toDepartmentId: a.departmentId ? String(a.departmentId) : prev.toDepartmentId,
+                            }));
+                            setShowSuggestions(false);
+                            setError('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-slate-800/80 transition-colors"
+                        >
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-mono font-bold text-amber-400">{a.assetId}</span>
+                            <span className="text-slate-400">{a.stationName}</span>
+                          </div>
+                          <div className="text-xs text-slate-200 truncate">{a.name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  You can transfer to another station/department or keep the same office &amp; department to reassign custodian.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -651,45 +751,6 @@ export default function TransfersPage() {
         </div>
       )}
 
-      {/* Approve Modal */}
-      {showApproveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800">
-              <h2 className="text-lg font-bold text-white">Approve Transfer</h2>
-              <button onClick={() => setShowApproveModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              {error && (
-                <div className="flex items-start space-x-2 p-3 bg-red-950/40 border border-red-900/50 text-red-200 rounded-lg text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
-                  <span>{error}</span>
-                </div>
-              )}
-              <div>
-                <label className={labelClass}>Signature Approval *</label>
-                <div className="border-2 border-dashed border-slate-700 rounded-lg bg-slate-950/50 mb-2">
-                  <SignatureCanvas
-                    ref={sigCanvas}
-                    canvasProps={{ className: 'w-full h-40 rounded-lg' }}
-                    penColor="#f59e0b"
-                  />
-                </div>
-                <button onClick={() => sigCanvas.current?.clear()} className="text-xs text-amber-500 hover:underline">Clear Signature</button>
-              </div>
-              <div className="flex items-center justify-end space-x-3 pt-2">
-                <button type="button" onClick={() => setShowApproveModal(false)} className="px-4 py-2 border border-slate-700 text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-medium">Cancel</button>
-                <button onClick={handleApproveSubmit} disabled={submitting} className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-sm flex items-center space-x-2 disabled:opacity-60">
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  <span>{submitting ? 'Approving...' : 'Approve'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

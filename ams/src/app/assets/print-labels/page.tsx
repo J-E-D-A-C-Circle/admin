@@ -156,22 +156,22 @@ export default function PrintLabelsPage() {
               return (
                 <div
                   key={asset.assetId}
-                  className="label-card border border-gray-300 p-2.5 rounded-lg flex flex-col justify-between overflow-hidden box-border bg-white text-black"
+                  className="label-card border border-[#cbd5e1] p-2.5 rounded-lg flex flex-col justify-between overflow-hidden box-border bg-[#ffffff] text-[#0f172a]"
                   style={{
                     height: '38mm',
                     width: '63mm',
                   }}
                 >
                   {/* Label Header */}
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-1 flex-shrink-0">
+                  <div className="flex items-center justify-between border-b border-[#cbd5e1] pb-1 flex-shrink-0">
                     <div className="flex items-center space-x-1">
                       <img src="/logo.png" alt="DVLA Logo" className="w-5 h-5 flex-shrink-0" />
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-black tracking-wide text-black leading-none">DVLA DAMS</span>
-                        <span className="text-[5px] text-gray-500 font-bold tracking-wider leading-none uppercase mt-0.5">Asset Label</span>
+                        <span className="text-[8px] font-black tracking-wide text-[#0f172a] leading-none">DVLA DAMS</span>
+                        <span className="text-[5px] text-[#475569] font-bold tracking-wider leading-none uppercase mt-0.5">Asset Label</span>
                       </div>
                     </div>
-                    <span className="text-[6px] font-mono font-bold px-1 bg-gray-100 text-gray-600 rounded border border-gray-200 uppercase max-w-[20mm] truncate">
+                    <span className="text-[6px] font-mono font-bold px-1 bg-[#f1f5f9] text-[#0f172a] rounded border border-[#cbd5e1] uppercase max-w-[20mm] truncate">
                       {asset.categoryName}
                     </span>
                   </div>
@@ -179,7 +179,7 @@ export default function PrintLabelsPage() {
                   {/* Label Body */}
                   <div className="flex-1 flex items-center justify-between py-1.5 space-x-2 overflow-hidden">
                     {/* QR Code */}
-                    <div className="bg-white p-1.5 rounded border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    <div className="bg-[#ffffff] p-1.5 rounded border border-[#cbd5e1] flex items-center justify-center flex-shrink-0">
                       <QRCodeSVG
                         value={detailsUrl}
                         size={62}
@@ -191,33 +191,33 @@ export default function PrintLabelsPage() {
                     {/* Metadata details */}
                     <div className="flex-1 min-w-0 space-y-1 self-center">
                       <div>
-                        <p className="text-[9px] font-mono font-black text-black leading-none tracking-tight">{asset.assetId}</p>
+                        <p className="text-[9px] font-mono font-black text-[#0f172a] leading-none tracking-tight">{asset.assetId}</p>
                       </div>
                       <div className="space-y-0.5">
-                        <p className="text-[8px] font-bold text-gray-900 truncate leading-none" title={asset.name}>
+                        <p className="text-[8px] font-bold text-[#0f172a] truncate leading-none" title={asset.name}>
                           {asset.name}
                         </p>
-                        <p className="text-[7px] text-gray-600 truncate leading-none">
+                        <p className="text-[7px] font-medium text-[#334155] truncate leading-none">
                           {asset.brand} {asset.model}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-1 pt-0.5 border-t border-gray-100">
+                      <div className="grid grid-cols-2 gap-1 pt-0.5 border-t border-[#e2e8f0]">
                         <div className="min-w-0">
-                          <p className="text-[5px] font-black text-gray-500 uppercase tracking-wider leading-none">Serial No</p>
-                          <p className="text-[7px] font-mono text-gray-800 truncate mt-0.5 leading-none">{asset.serialNumber}</p>
+                          <p className="text-[5px] font-black text-[#475569] uppercase tracking-wider leading-none">Serial No</p>
+                          <p className="text-[7px] font-mono font-semibold text-[#0f172a] truncate mt-0.5 leading-none">{asset.serialNumber}</p>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[5px] font-black text-gray-500 uppercase tracking-wider leading-none">Station</p>
-                          <p className="text-[7px] font-bold text-gray-800 truncate mt-0.5 leading-none">{asset.stationName}</p>
+                          <p className="text-[5px] font-black text-[#475569] uppercase tracking-wider leading-none">Station</p>
+                          <p className="text-[7px] font-bold text-[#0f172a] truncate mt-0.5 leading-none">{asset.stationName}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Label Footer */}
-                  <div className="border-t border-gray-200 pt-1 flex items-center justify-between text-[6px] text-gray-500 flex-shrink-0">
+                  <div className="border-t border-[#cbd5e1] pt-1 flex items-center justify-between text-[6px] font-semibold text-[#475569] flex-shrink-0">
                     <span>Property of DVLA Ghana</span>
-                    <span className="font-mono">{new Date(asset.acquisitionDate).toLocaleDateString('en-GB')}</span>
+                    <span className="font-mono text-[#0f172a]">{new Date(asset.acquisitionDate).toLocaleDateString('en-GB')}</span>
                   </div>
                 </div>
               );

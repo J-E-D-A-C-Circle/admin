@@ -17,7 +17,33 @@ import {
   Briefcase,
   Eye,
   X,
+  TrendingUp,
+  CheckCircle2,
+  Users,
+  Archive,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
+
+const CHART_COLORS = ['#10b981', '#f59e0b', '#38bdf8', '#a855f7', '#ef4444', '#64748b', '#ec4899'];
+const STATUS_COLORS: Record<string, string> = {
+  Active: '#10b981',
+  'Under Maintenance': '#f59e0b',
+  Damaged: '#f97316',
+  Missing: '#ef4444',
+  Obsolete: '#64748b',
+};
 import {
   Select,
   SelectContent,
@@ -65,6 +91,13 @@ const reportTypes: ReportType[] = [
     description: 'All assets currently marked as Damaged.',
     icon: <Wrench className="w-6 h-6" />,
     color: 'text-orange-400',
+  },
+  {
+    key: 'obsolete',
+    label: 'Obsolete & Disposal Report',
+    description: 'All obsolete assets, disposal methods, and realised values.',
+    icon: <Archive className="w-6 h-6" />,
+    color: 'text-slate-400',
   },
   {
     key: 'verification',
@@ -360,7 +393,179 @@ export default function ReportsPage() {
       )}
 
       {result && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="space-y-6">
+          {selectedReport === 'inventory' && result.summary && result.charts && (
+            <div className="space-y-5">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>Total Assets</span>
+                    <BarChart3 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-white">{result.summary.totalAssets.toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Top category: <span className="text-slate-200 font-medium">{result.summary.topCategory}</span>
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>Total Value</span>
+                    <TrendingUp className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-white">
+                    GHS {Number(result.summary.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Top station: <span className="text-slate-200 font-medium">{result.summary.topStation}</span>
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>Operational Readiness</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-emerald-400">{result.summary.activeRate}%</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {result.summary.activeCount} active • {result.summary.maintenanceCount + result.summary.damagedCount + result.summary.missingCount} need attention
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>Custodian Assignment</span>
+                    <Users className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-white">{result.summary.assignedCount}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {result.summary.unassignedCount} unassigned • {result.summary.obsoleteCount} obsolete
+                  </p>
+                </div>
+              </div>
+
+              {/* Narrative Evaluation Banner */}
+              <div className="bg-emerald-950/25 border border-emerald-800/40 rounded-xl p-4 flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-slate-300 leading-relaxed">
+                  <span className="font-semibold text-white">Report Evaluation: </span>
+                  This inventory snapshot covers <span className="font-semibold text-white">{result.summary.totalAssets}</span> asset{result.summary.totalAssets === 1 ? '' : 's'} with a combined purchase value of{' '}
+                  <span className="font-semibold text-amber-300">
+                    GHS {Number(result.summary.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  . Operational readiness stands at <span className="font-semibold text-emerald-400">{result.summary.activeRate}%</span> ({result.summary.activeCount} Active).
+                  {result.summary.maintenanceCount + result.summary.damagedCount + result.summary.missingCount > 0
+                    ? ` ${result.summary.maintenanceCount} under maintenance, ${result.summary.damagedCount} damaged, and ${result.summary.missingCount} missing asset(s) require follow-up.`
+                    : ' No assets are currently flagged as damaged, missing, or under maintenance.'}{' '}
+                  Highest asset concentration is in <span className="font-semibold text-white">{result.summary.topCategory}</span> at <span className="font-semibold text-white">{result.summary.topStation}</span>.
+                </div>
+              </div>
+
+              {/* Charts Grid */}
+              {result.summary.totalAssets > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-white">Assets by Category</h3>
+                    <p className="text-xs text-slate-400 mb-3">Distribution of asset count across categories</p>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={result.charts.byCategory} margin={{ top: 8, right: 12, left: -16, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                          <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} angle={-20} textAnchor="end" interval={0} height={50} />
+                          <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, color: '#f8fafc' }} />
+                          <Bar dataKey="count" name="Assets" fill="#10b981" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-white">Condition &amp; Status Mix</h3>
+                    <p className="text-xs text-slate-400 mb-3">Share of Active, Maintenance, Damaged, Missing &amp; Obsolete</p>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={result.charts.byStatus}
+                            dataKey="count"
+                            nameKey="name"
+                            cx="50%"
+                            cy="45%"
+                            innerRadius={45}
+                            outerRadius={75}
+                            paddingAngle={3}
+                          >
+                            {result.charts.byStatus.map((entry: any, idx: number) => (
+                              <Cell
+                                key={entry.name}
+                                fill={STATUS_COLORS[entry.name] || CHART_COLORS[idx % CHART_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, color: '#f8fafc' }} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-white">Top Stations by Volume</h3>
+                    <p className="text-xs text-slate-400 mb-3">Stations holding the highest asset counts</p>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={result.charts.byStation} layout="vertical" margin={{ top: 8, right: 16, left: 10, bottom: 8 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                          <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
+                          <YAxis dataKey="name" type="category" width={95} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                          <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, color: '#f8fafc' }} />
+                          <Bar dataKey="count" name="Assets" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Charts for non-inventory array reports (movement, missing, damaged, verification) */}
+          {selectedReport !== 'inventory' && Array.isArray(result.data) && result.data.length > 0 && (() => {
+            const counts = new Map<string, number>();
+            for (const row of result.data) {
+              const key = row.stationName || row.toStation || row.categoryName || row.status || 'Other';
+              counts.set(key, (counts.get(key) || 0) + 1);
+            }
+            const chartRows = Array.from(counts.entries())
+              .map(([name, count]) => ({ name, count }))
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 10);
+
+            if (chartRows.length === 0) return null;
+            return (
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-white">Report Distribution Overview</h3>
+                <p className="text-xs text-slate-400 mb-3">
+                  Record volume grouped by station / category ({result.data.length} total records)
+                </p>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartRows} margin={{ top: 8, right: 16, left: -16, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} angle={-15} textAnchor="end" interval={0} height={46} />
+                      <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, color: '#f8fafc' }} />
+                      <Bar dataKey="count" name="Records" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm font-semibold text-white">
               <FileText className="w-4 h-4 text-amber-400" />
@@ -428,6 +633,7 @@ export default function ReportsPage() {
               </div>
             );
           })()}
+          </div>
         </div>
       )}
 

@@ -73,17 +73,17 @@ export default function AssetLabelPage() {
       </div>
 
       {/* Label Container */}
-      <div className="w-[400px] h-[240px] bg-white text-slate-900 border border-slate-300 rounded-lg p-5 shadow-2xl flex flex-col justify-between font-sans relative print:shadow-none print:border-none print:m-0 print:w-[4in] print:h-[2.4in]">
+      <div className="w-[400px] h-[240px] bg-[#ffffff] text-[#0f172a] border border-[#cbd5e1] rounded-lg p-5 shadow-2xl flex flex-col justify-between font-sans relative print:shadow-none print:border-none print:m-0 print:w-[4in] print:h-[2.4in]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+        <div className="flex items-center justify-between border-b border-[#cbd5e1] pb-2">
           <div className="flex items-center space-x-2">
             <img src="/logo.png" alt="DVLA Logo" className="w-7 h-7 flex-shrink-0" />
             <div className="flex flex-col">
-              <span className="text-xs font-black tracking-wider text-slate-800 leading-none">DVLA DAMS</span>
-              <span className="text-[7px] text-slate-500 font-bold tracking-widest leading-none uppercase mt-0.5">Asset Control Label</span>
+              <span className="text-xs font-black tracking-wider text-[#0f172a] leading-none">DVLA DAMS</span>
+              <span className="text-[7px] text-[#475569] font-bold tracking-widest leading-none uppercase mt-0.5">Asset Control Label</span>
             </div>
           </div>
-          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200 uppercase">
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-[#f1f5f9] text-[#0f172a] rounded border border-[#cbd5e1] uppercase">
             {asset.categoryName}
           </span>
         </div>
@@ -91,7 +91,7 @@ export default function AssetLabelPage() {
         {/* Content Body */}
         <div className="flex-1 flex items-center justify-between py-3 space-x-4">
           {/* QR Code Container */}
-          <div className="bg-slate-50 p-2.5 rounded border border-slate-200/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="bg-[#ffffff] p-2.5 rounded border border-[#cbd5e1] flex items-center justify-center flex-shrink-0 shadow-sm">
             <QRCodeSVG
               value={typeof window !== 'undefined' ? `${window.location.origin}/assets/${asset.assetId}` : asset.assetId}
               size={85}
@@ -103,31 +103,31 @@ export default function AssetLabelPage() {
           {/* Details */}
           <div className="flex-1 min-w-0 space-y-1.5 self-center">
             <div>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">Asset ID</p>
-              <p className="text-xs font-mono font-black text-slate-900 leading-tight tracking-tight mt-0.5">{asset.assetId}</p>
+              <p className="text-[8px] font-black text-[#475569] uppercase tracking-wider leading-none">Asset ID</p>
+              <p className="text-xs font-mono font-black text-[#0f172a] leading-tight tracking-tight mt-0.5">{asset.assetId}</p>
             </div>
             <div>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">Description</p>
-              <p className="text-[10px] font-bold text-slate-800 truncate leading-none mt-0.5">{asset.name}</p>
-              <p className="text-[9px] text-slate-500 leading-none mt-0.5">{asset.brand} {asset.model}</p>
+              <p className="text-[8px] font-black text-[#475569] uppercase tracking-wider leading-none">Description</p>
+              <p className="text-[10px] font-bold text-[#0f172a] truncate leading-none mt-0.5">{asset.name}</p>
+              <p className="text-[9px] font-medium text-[#334155] leading-none mt-0.5">{asset.brand} {asset.model}</p>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-0.5">
               <div>
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider leading-none">Serial No</p>
-                <p className="text-[9px] font-mono text-slate-800 truncate mt-0.5">{asset.serialNumber}</p>
+                <p className="text-[7px] font-black text-[#475569] uppercase tracking-wider leading-none">Serial No</p>
+                <p className="text-[9px] font-mono font-semibold text-[#0f172a] truncate mt-0.5">{asset.serialNumber}</p>
               </div>
               <div>
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-wider leading-none">Location</p>
-                <p className="text-[9px] font-bold text-slate-800 truncate mt-0.5">{asset.stationName}</p>
+                <p className="text-[7px] font-black text-[#475569] uppercase tracking-wider leading-none">Location</p>
+                <p className="text-[9px] font-bold text-[#0f172a] truncate mt-0.5">{asset.stationName}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between text-[8px] text-slate-500">
+        <div className="border-t border-[#cbd5e1] pt-2 flex items-center justify-between text-[8px] font-semibold text-[#475569]">
           <span>Property of DVLA Ghana</span>
-          <span className="font-mono">{new Date(asset.acquisitionDate).toLocaleDateString('en-GB')}</span>
+          <span className="font-mono text-[#0f172a]">{new Date(asset.acquisitionDate).toLocaleDateString('en-GB')}</span>
         </div>
       </div>
 

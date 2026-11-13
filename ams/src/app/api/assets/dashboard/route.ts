@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       .from(assets)
       .where(
         and(
-          ne(assets.status, 'Disposed'),
+          ne(assets.status, 'Obsolete'),
           or(
             isNull(assets.lastVerificationDate),
             lte(assets.lastVerificationDate, ninetyDaysAgo)
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
       })
       .from(assets)
       .leftJoin(assetCategories, eq(assets.categoryId, assetCategories.id))
-      .where(and(ne(assets.status, 'Disposed'), whereClause));
+      .where(and(ne(assets.status, 'Obsolete'), whereClause));
 
     const categoriesSet = new Set(allAssets.map((a) => a.categoryName || 'Unknown'));
     const categories = Array.from(categoriesSet);
