@@ -15,19 +15,24 @@ interface IdRow extends RowDataPacket {
 
 async function runSchemaMigrations() {
   try {
-    // 1. Migrate assets.status enum: Disposed -> Obsolete
+    // 1. Migrate assets.status enum: Disposed -> Obsolete, Missing -> Obsolete, add Auctioned
     const [assetStatusCols] = await poolConnection.query<ColumnTypeRow[]>(
       `SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assets' AND COLUMN_NAME = 'status'`
     );
     const assetStatusType = assetStatusCols?.[0]?.COLUMN_TYPE || '';
-    if (assetStatusType.includes('Disposed') || !assetStatusType.includes('Obsolete')) {
+    if (
+      assetStatusType.includes('Disposed') ||
+      assetStatusType.includes('Missing') ||
+      !assetStatusType.includes('Obsolete') ||
+      !assetStatusType.includes('Auctioned')
+    ) {
       await poolConnection.query(
-        `ALTER TABLE assets MODIFY COLUMN status ENUM('Active','Under_Maintenance','Damaged','Missing','Disposed','Obsolete') NOT NULL DEFAULT 'Active'`
+        `ALTER TABLE assets MODIFY COLUMN status ENUM('Active','Under_Maintenance','Damaged','Missing','Disposed','Obsolete','Auctioned') NOT NULL DEFAULT 'Active'`
       );
-      await poolConnection.query(`UPDATE assets SET status = 'Obsolete' WHERE status = 'Disposed'`);
+      await poolConnection.query(`UPDATE assets SET status = 'Obsolete' WHERE status IN ('Disposed', 'Missing')`);
       await poolConnection.query(
-        `ALTER TABLE assets MODIFY COLUMN status ENUM('Active','Under_Maintenance','Damaged','Missing','Obsolete') NOT NULL DEFAULT 'Active'`
+        `ALTER TABLE assets MODIFY COLUMN status ENUM('Active','Under_Maintenance','Damaged','Obsolete','Auctioned') NOT NULL DEFAULT 'Active'`
       );
     }
 
@@ -167,6 +172,67 @@ async function runSchemaMigrations() {
         `ALTER TABLE disposals MODIFY COLUMN realised_value DECIMAL(14,2) NULL`
       );
     }
+
+    // 9. Ensure assets.sub_location column exists
+    const [subLocCol] = await poolConnection.query<ColumnTypeRow[]>(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'assets' AND COLUMN_NAME = 'sub_location' LIMIT 1`
+    );
+    if (!subLocCol?.length) {
+      await poolConnection.query(
+        `ALTER TABLE assets ADD COLUMN sub_location VARCHAR(120) NULL AFTER department_id`
+      );
+    }
+
+    // 10. Ensure asset_attachments table exists
+    await poolConnection.query(`
+      CREATE TABLE IF NOT EXISTS asset_attachments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        asset_id VARCHAR(50) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        doc_type ENUM('Photo','Invoice','Warranty','Other') NOT NULL DEFAULT 'Photo',
+        file_url VARCHAR(500) NOT NULL,
+        mime_type VARCHAR(100) NULL,
+        uploaded_by_user_id INT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_attachments_asset (asset_id),
+        CONSTRAINT fk_attachments_asset FOREIGN KEY (asset_id) REFERENCES assets(asset_id) ON DELETE CASCADE,
+        CONSTRAINT fk_attachments_user FOREIGN KEY (uploaded_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    // 11. Ensure audit_campaigns & audit_campaign_items tables exist
+    await poolConnection.query(`
+      CREATE TABLE IF NOT EXISTS audit_campaigns (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        station_id INT NULL,
+        category_id INT NULL,
+        status ENUM('Active','Completed') NOT NULL DEFAULT 'Active',
+        created_by_user_id INT NULL,
+        started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME NULL,
+        CONSTRAINT fk_campaigns_station FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE SET NULL,
+        CONSTRAINT fk_campaigns_category FOREIGN KEY (category_id) REFERENCES asset_categories(id) ON DELETE SET NULL,
+        CONSTRAINT fk_campaigns_user FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    await poolConnection.query(`
+      CREATE TABLE IF NOT EXISTS audit_campaign_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        campaign_id INT NOT NULL,
+        asset_id VARCHAR(50) NOT NULL,
+        status ENUM('Pending','Verified','Missing','Damaged') NOT NULL DEFAULT 'Pending',
+        scanned_at DATETIME NULL,
+        scanned_by_user_id INT NULL,
+        notes TEXT NULL,
+        UNIQUE KEY uq_campaign_asset (campaign_id, asset_id),
+        CONSTRAINT fk_campaign_items_campaign FOREIGN KEY (campaign_id) REFERENCES audit_campaigns(id) ON DELETE CASCADE,
+        CONSTRAINT fk_campaign_items_asset FOREIGN KEY (asset_id) REFERENCES assets(asset_id) ON DELETE CASCADE,
+        CONSTRAINT fk_campaign_items_user FOREIGN KEY (scanned_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
   } catch (err) {
     console.error('ensureSchema warning:', err);
     // Reset so a subsequent request can retry if DB was warming up

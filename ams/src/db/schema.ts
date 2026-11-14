@@ -90,8 +90,9 @@ export const assets = mysqlTable('assets', {
   regionId: int('region_id').notNull().references(() => regions.id),
   stationId: int('station_id').notNull().references(() => stations.id),
   departmentId: int('department_id').notNull().references(() => departments.id),
+  subLocation: varchar('sub_location', { length: 120 }),
   assignedEmployeeId: int('assigned_employee_id').references(() => employees.id),
-  status: mysqlEnum('status', ['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Obsolete']).default('Active').notNull(),
+  status: mysqlEnum('status', ['Active', 'Under_Maintenance', 'Damaged', 'Obsolete', 'Auctioned']).default('Active').notNull(),
   acquisitionDate: datetime('acquisition_date').notNull(),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: datetime('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -180,4 +181,36 @@ export const maintenanceSchedules = mysqlTable('maintenance_schedules', {
   serviceNotes: text('service_notes'),
   recordedByUserId: int('recorded_by_user_id').notNull().references(() => users.id),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const assetAttachments = mysqlTable('asset_attachments', {
+  id: int('id').primaryKey().autoincrement(),
+  assetId: varchar('asset_id', { length: 50 }).notNull().references(() => assets.assetId, { onDelete: 'cascade' }),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  docType: mysqlEnum('doc_type', ['Photo', 'Invoice', 'Warranty', 'Other']).default('Photo').notNull(),
+  fileUrl: varchar('file_url', { length: 500 }).notNull(),
+  mimeType: varchar('mime_type', { length: 100 }),
+  uploadedByUserId: int('uploaded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const auditCampaigns = mysqlTable('audit_campaigns', {
+  id: int('id').primaryKey().autoincrement(),
+  title: varchar('title', { length: 200 }).notNull(),
+  stationId: int('station_id').references(() => stations.id, { onDelete: 'set null' }),
+  categoryId: int('category_id').references(() => assetCategories.id, { onDelete: 'set null' }),
+  status: mysqlEnum('status', ['Active', 'Completed']).default('Active').notNull(),
+  createdByUserId: int('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  startedAt: datetime('started_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  completedAt: datetime('completed_at'),
+});
+
+export const auditCampaignItems = mysqlTable('audit_campaign_items', {
+  id: int('id').primaryKey().autoincrement(),
+  campaignId: int('campaign_id').notNull().references(() => auditCampaigns.id, { onDelete: 'cascade' }),
+  assetId: varchar('asset_id', { length: 50 }).notNull().references(() => assets.assetId, { onDelete: 'cascade' }),
+  status: mysqlEnum('status', ['Pending', 'Verified', 'Missing', 'Damaged']).default('Pending').notNull(),
+  scannedAt: datetime('scanned_at'),
+  scannedByUserId: int('scanned_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  notes: text('notes'),
 });

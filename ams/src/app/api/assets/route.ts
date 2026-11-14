@@ -5,6 +5,7 @@ import { assets, assetCategories, assetSubcategories, regions, stations, departm
 import { eq, and, or, like, sql, count as countFn, inArray } from 'drizzle-orm';
 import { verifyAuth, getScopeWhere, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-helper';
 import { logAudit } from '@/lib/audit-helper';
+import { ensureSchema } from '@/lib/ensureSchema';
 
 const createAssetSchema = z.object({
   name: z.string().min(1),
@@ -20,12 +21,14 @@ const createAssetSchema = z.object({
   regionId: z.number().int().positive(),
   stationId: z.number().int().positive(),
   departmentId: z.number().int().positive(),
+  subLocation: z.string().max(120).optional().nullable(),
   assignedEmployeeId: z.number().int().positive().optional().nullable(),
   acquisitionDate: z.string(),
 });
 
 export async function GET(req: NextRequest) {
   try {
+    await ensureSchema();
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
 
@@ -109,6 +112,7 @@ export async function GET(req: NextRequest) {
         stationName: stations.name,
         departmentId: assets.departmentId,
         departmentName: departments.name,
+        subLocation: assets.subLocation,
         assignedEmployeeId: assets.assignedEmployeeId,
         assignedEmployeeName: employees.name,
         assignedEmployeeIdCode: employees.employeeId,
@@ -151,6 +155,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureSchema();
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
     if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {

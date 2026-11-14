@@ -178,9 +178,13 @@ export const api = {
   },
 
   // Upload
-  async uploadFile(file: File): Promise<{ url: string }> {
+  async uploadFile(
+    file: File,
+    folder: 'verifications' | 'assets' = 'verifications'
+  ): Promise<{ url: string; fileName?: string; mimeType?: string }> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('folder', folder);
     
     // Custom fetch because we don't want Content-Type: application/json for FormData
     const token = typeof window !== 'undefined' ? localStorage.getItem('dams_token') : null;
@@ -274,8 +278,23 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getMissingReport(): Promise<any[]> {
-    const res = await fetch(`${BASE_URL}/reports/missing`, { headers: getHeaders() });
+  async getAuctionedReport(): Promise<any> {
+    const res = await fetch(`${BASE_URL}/reports/auctioned`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getValuationReport(): Promise<any> {
+    const res = await fetch(`${BASE_URL}/reports/valuation`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getOverdueReport(): Promise<any> {
+    const res = await fetch(`${BASE_URL}/reports/overdue`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getCustodianReport(): Promise<any> {
+    const res = await fetch(`${BASE_URL}/reports/custodian`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
@@ -450,6 +469,79 @@ export const api = {
   // Activity Leaderboard
   async getActivityLeaderboard(): Promise<any[]> {
     const res = await fetch(`${BASE_URL}/reports/activity`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Asset Attachments
+  async getAssetAttachments(id: string): Promise<any[]> {
+    const res = await fetch(`${BASE_URL}/assets/${encodeURIComponent(id)}/attachments`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async addAssetAttachment(
+    id: string,
+    payload: { fileName: string; docType: 'Photo' | 'Invoice' | 'Warranty' | 'Other'; fileUrl: string; mimeType?: string | null }
+  ): Promise<any> {
+    const res = await fetch(`${BASE_URL}/assets/${encodeURIComponent(id)}/attachments`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAssetAttachment(id: string, attachmentId: number): Promise<any> {
+    const res = await fetch(`${BASE_URL}/assets/${encodeURIComponent(id)}/attachments?attachmentId=${attachmentId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  // Employee Custody & Clearance
+  async getEmployeeCustody(id: number): Promise<any> {
+    const res = await fetch(`${BASE_URL}/employees/${id}/assets`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Physical Audit Campaigns
+  async getAuditCampaigns(): Promise<any[]> {
+    const res = await fetch(`${BASE_URL}/audit-campaigns`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async createAuditCampaign(payload: { title: string; stationId?: number | null; categoryId?: number | null }): Promise<any> {
+    const res = await fetch(`${BASE_URL}/audit-campaigns`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async getAuditCampaignDetail(id: number): Promise<any> {
+    const res = await fetch(`${BASE_URL}/audit-campaigns/${id}`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async scanAuditCampaignItem(
+    campaignId: number,
+    payload: { assetId: string; status: 'Verified' | 'Missing' | 'Damaged'; notes?: string | null }
+  ): Promise<any> {
+    const res = await fetch(`${BASE_URL}/audit-campaigns/${campaignId}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ action: 'scan', ...payload }),
+    });
+    return handleResponse(res);
+  },
+
+  async completeAuditCampaign(campaignId: number, markRemainingMissing: boolean): Promise<any> {
+    const res = await fetch(`${BASE_URL}/audit-campaigns/${campaignId}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ action: 'complete', markRemainingMissing }),
+    });
     return handleResponse(res);
   },
 };

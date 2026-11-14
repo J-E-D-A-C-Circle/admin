@@ -321,7 +321,7 @@ async function main() {
       assetId: 'DVLA-IT-000004', name: 'Lenovo ThinkPad X1 Carbon', categoryId: catsMap['IT'], subcategoryId: subcatsMap['LAP'],
       brand: 'Lenovo', model: 'X1 Carbon Gen 9', serialNumber: 'SN-LEN-9922881', regionId: regionsMap['GAR'],
       stationId: stationsMap['Accra Main (37)'], departmentId: deptsMap['Audit'],
-      status: 'Missing' as const, acquisitionDate: new Date('2025-05-15'),
+      status: 'Obsolete' as const, acquisitionDate: new Date('2025-05-15'),
       lastVerificationDate: new Date('2026-04-12'),
     },
   ];

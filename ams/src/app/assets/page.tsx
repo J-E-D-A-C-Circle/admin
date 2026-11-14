@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -117,7 +118,7 @@ export default function AssetsPage() {
   // Active Tab in drawer
   const [drawerTab, setDrawerTab] = useState<'info' | 'history' | 'audit' | 'edit' | 'maintenance' | 'dispose'>('info');
 
-  const limit = 10;
+  const [limit, setLimit] = useState(20);
 
   // Load assets and lookups
   const loadAssets = async () => {
@@ -144,7 +145,7 @@ export default function AssetsPage() {
   useEffect(() => {
     setSelectedIds([]);
     loadAssets();
-  }, [page, status, categoryId, regionId, stationId]);
+  }, [page, limit, status, categoryId, regionId, stationId]);
 
   useEffect(() => {
     const fetchLookups = async () => {
@@ -495,10 +496,10 @@ export default function AssetsPage() {
         return <Badge variant="info">Under Maintenance</Badge>;
       case 'Damaged':
         return <Badge variant="destructive">Damaged</Badge>;
-      case 'Missing':
-        return <Badge variant="warning">Missing</Badge>;
       case 'Obsolete':
         return <Badge variant="secondary">Obsolete</Badge>;
+      case 'Auctioned':
+        return <Badge variant="warning">Auctioned</Badge>;
       default:
         return <Badge variant="outline">{s.replace('_', ' ')}</Badge>;
     }
@@ -512,8 +513,8 @@ export default function AssetsPage() {
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'Damaged':
         return 'bg-red-500/10 text-red-400 border-red-500/20';
-      case 'Missing':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      case 'Auctioned':
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
       default:
         return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
     }
@@ -723,8 +724,8 @@ export default function AssetsPage() {
               <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
               <SelectItem value="Damaged">Damaged</SelectItem>
-              <SelectItem value="Missing">Missing</SelectItem>
               <SelectItem value="Obsolete">Obsolete</SelectItem>
+              <SelectItem value="Auctioned">Auctioned</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1007,41 +1008,17 @@ export default function AssetsPage() {
         )}
 
         {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-3.5 border-t border-slate-800 bg-slate-950/50">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">
-                Page <span className="font-semibold text-slate-200">{page}</span> of <span className="font-semibold text-slate-200">{totalPages}</span>
-              </span>
-              <span className="text-slate-600">•</span>
-              <span className="text-xs text-slate-400">
-                Total <span className="font-semibold text-slate-200">{total}</span> items
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-                className="h-8 px-2.5"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                <span>Previous</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-                className="h-8 px-2.5"
-              >
-                <span>Next</span>
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page}
+          limit={limit}
+          total={total}
+          itemLabel="items"
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Slidedown/Drawer Panel */}
@@ -1095,76 +1072,78 @@ export default function AssetsPage() {
               </div>
             ) : (
               <>
-                {/* Tabs selection */}
-                <div className="flex overflow-x-auto whitespace-nowrap border-b border-slate-800 px-6 bg-slate-950/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <button
-                    onClick={() => setDrawerTab('info')}
-                    className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                      drawerTab === 'info'
-                        ? 'border-amber-500 text-amber-500'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Specifications
-                  </button>
-                  <button
-                    onClick={() => setDrawerTab('history')}
-                    className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                      drawerTab === 'history'
-                        ? 'border-amber-500 text-amber-500'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    History Timeline
-                  </button>
-                  {drawerAsset && drawerAsset.categoryName === 'Vehicles' && (
+                {/* Tabs selection (single-row pill switch) */}
+                <div className="px-6 py-3 border-b border-slate-800 bg-slate-950/10">
+                  <div className="inline-flex w-full items-center gap-1 rounded-xl bg-slate-950/70 p-1 border border-slate-800">
                     <button
-                      onClick={() => setDrawerTab('maintenance')}
-                      className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                        drawerTab === 'maintenance'
-                          ? 'border-blue-500 text-blue-500'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
+                      onClick={() => setDrawerTab('info')}
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                        drawerTab === 'info'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                       }`}
                     >
-                      Maintenance
+                      Specs
                     </button>
-                  )}
-                  {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && drawerAsset?.status !== 'Obsolete' && (
                     <button
-                      onClick={() => setDrawerTab('edit')}
-                      className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                        drawerTab === 'edit'
-                          ? 'border-amber-500 text-amber-500'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                    >
-                      Update Asset
-                    </button>
-                  )}
-                  {(userRole === 'Super Admin' || userRole === 'Asset Officer') && drawerAsset?.status !== 'Obsolete' && (
-                    <button
-                      onClick={() => setDrawerTab('audit')}
-                      className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                        drawerTab === 'audit'
-                          ? 'border-amber-500 text-amber-500'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
+                      onClick={() => setDrawerTab('history')}
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                        drawerTab === 'history'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                       }`}
                     >
-                      Audit & Verify
+                      History
                     </button>
-                  )}
-                  {userRole === 'Super Admin' && drawerAsset?.status !== 'Obsolete' && (
-                    <button
-                      onClick={() => setDrawerTab('dispose')}
-                      className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors flex-shrink-0 ${
-                        drawerTab === 'dispose'
-                          ? 'border-red-500 text-red-500'
-                          : 'border-transparent text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Obsolescence
-                    </button>
-                  )}
+                    {drawerAsset && drawerAsset.categoryName === 'Vehicles' && (
+                      <button
+                        onClick={() => setDrawerTab('maintenance')}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                          drawerTab === 'maintenance'
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Service
+                      </button>
+                    )}
+                    {(userRole === 'Super Admin' || userRole === 'Asset Officer' || userRole === 'Station Manager') && drawerAsset?.status !== 'Obsolete' && drawerAsset?.status !== 'Auctioned' && (
+                      <button
+                        onClick={() => setDrawerTab('edit')}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                          drawerTab === 'edit'
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Update
+                      </button>
+                    )}
+                    {(userRole === 'Super Admin' || userRole === 'Asset Officer') && drawerAsset?.status !== 'Obsolete' && drawerAsset?.status !== 'Auctioned' && (
+                      <button
+                        onClick={() => setDrawerTab('audit')}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                          drawerTab === 'audit'
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Verify
+                      </button>
+                    )}
+                    {userRole === 'Super Admin' && drawerAsset?.status !== 'Obsolete' && drawerAsset?.status !== 'Auctioned' && (
+                      <button
+                        onClick={() => setDrawerTab('dispose')}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${
+                          drawerTab === 'dispose'
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'text-slate-400 hover:text-red-400 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Dispose
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Tab content area */}
@@ -1440,8 +1419,8 @@ export default function AssetsPage() {
                             <SelectItem value="Active">Active</SelectItem>
                             <SelectItem value="Under_Maintenance">Under Maintenance</SelectItem>
                             <SelectItem value="Damaged">Damaged</SelectItem>
-                            <SelectItem value="Missing">Missing</SelectItem>
                             <SelectItem value="Obsolete">Obsolete</SelectItem>
+                            <SelectItem value="Auctioned">Auctioned</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1666,7 +1645,7 @@ export default function AssetsPage() {
                   {/* Disposal Tab */}
                   {drawerTab === 'dispose' && drawerAsset && (
                     <form onSubmit={handleDisposeAssetSubmit} className="space-y-4 p-4 bg-slate-950/30 border border-slate-800 rounded-xl">
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Mark Asset as Obsolete</h4>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Dispose / Retire Asset</h4>
                       {disposeSuccess && (
                         <div className="p-3 bg-emerald-950/40 border border-emerald-900/50 text-emerald-250 rounded-lg text-sm font-medium">
                           {disposeSuccess}
@@ -1678,7 +1657,7 @@ export default function AssetsPage() {
                         </div>
                       )}
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">Obsolescence Method *</label>
+                        <label className="text-xs font-semibold text-slate-300">Disposal Method *</label>
                         <Select value={disposeMethod} onValueChange={(val) => setDisposeMethod(val as 'Auction' | 'Scrapped' | 'Donated' | 'Written_Off')}>
                           <SelectTrigger className="w-full bg-slate-950 border-slate-800">
                             <SelectValue />
@@ -1704,7 +1683,7 @@ export default function AssetsPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-300">Obsolescence Notes / Authorization Details</label>
+                        <label className="text-xs font-semibold text-slate-300">Disposal Notes / Authorization Details</label>
                         <textarea
                           rows={3}
                           value={disposeNotes}
@@ -1718,7 +1697,7 @@ export default function AssetsPage() {
                         disabled={disposeSubmitting}
                         className="w-full py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
                       >
-                        {disposeSubmitting ? 'Marking Obsolete...' : 'Confirm Mark Obsolete'}
+                        {disposeSubmitting ? 'Processing Disposal...' : 'Confirm Disposal'}
                       </button>
                     </form>
                   )}
@@ -1776,7 +1755,9 @@ export default function AssetsPage() {
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="Under_Maintenance">In Maintenance</SelectItem>
+                    <SelectItem value="Damaged">Damaged</SelectItem>
                     <SelectItem value="Obsolete">Obsolete</SelectItem>
+                    <SelectItem value="Auctioned">Auctioned</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

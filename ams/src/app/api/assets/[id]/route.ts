@@ -5,6 +5,7 @@ import { assets, assetCategories, assetSubcategories, regions, stations, departm
 import { eq, and } from 'drizzle-orm';
 import { verifyAuth, getScopeWhere, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-helper';
 import { logAudit } from '@/lib/audit-helper';
+import { ensureSchema } from '@/lib/ensureSchema';
 
 const updateAssetSchema = z.object({
   name: z.string().min(1),
@@ -15,12 +16,14 @@ const updateAssetSchema = z.object({
   engineNumber: z.string().optional().nullable(),
   purchaseValue: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  status: z.enum(['Active', 'Under_Maintenance', 'Damaged', 'Missing', 'Obsolete']),
+  status: z.enum(['Active', 'Under_Maintenance', 'Damaged', 'Obsolete', 'Auctioned']),
+  subLocation: z.string().max(120).optional().nullable(),
   assignedEmployeeId: z.number().int().positive().optional().nullable(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await ensureSchema();
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
 
@@ -58,6 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         stationName: stations.name,
         departmentId: assets.departmentId,
         departmentName: departments.name,
+        subLocation: assets.subLocation,
         assignedEmployeeId: assets.assignedEmployeeId,
         assignedEmployeeName: employees.name,
         assignedEmployeeIdCode: employees.employeeId,
@@ -86,6 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await ensureSchema();
     const caller = verifyAuth(req);
     if (!caller) return unauthorizedResponse();
     if (caller.role !== 'Super Admin' && caller.role !== 'Asset Officer') {
@@ -129,9 +134,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (existing.status !== status) {
         changes.push(`Status updated from '${existing.status}' to '${status}'`);
 
-        if (status === 'Missing' || status === 'Damaged') {
+        if (status === 'Damaged') {
           await tx.insert(notifications).values({
-            type: status === 'Missing' ? 'AssetMissing' : 'AssetUpdated',
+            type: 'AssetUpdated',
             message: `Asset ${rest.name} (${assetId}) marked as ${status}`,
             assetId,
           });

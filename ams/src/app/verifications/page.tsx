@@ -12,6 +12,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { AuditCampaignsPanel } from '@/components/audit-campaigns-panel';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 type Verification = {
   id: number;
@@ -80,7 +82,7 @@ export default function VerificationsPage() {
   const [userRole, setUserRole] = useState<string>('');
   const [userStationId, setUserStationId] = useState<number | null>(null);
 
-  const limit = 15;
+  const [limit, setLimit] = useState(20);
 
   // Single Verify Form
   const [form, setForm] = useState({
@@ -123,7 +125,7 @@ export default function VerificationsPage() {
 
   useEffect(() => {
     fetchVerifications();
-  }, [page, search, statusFilter, typeFilter]);
+  }, [page, limit, search, statusFilter, typeFilter]);
 
   useEffect(() => {
     if (assetSearch.trim().length < 2) {
@@ -364,6 +366,9 @@ export default function VerificationsPage() {
         </div>
       </div>
 
+      {/* Physical Audit Campaigns (Cycle-Count Mode) */}
+      <AuditCampaignsPanel />
+
       {successMsg && (
         <div className="flex items-center space-x-2 p-3 bg-emerald-950/40 border border-emerald-900/50 text-emerald-200 rounded-lg text-sm">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -601,22 +606,17 @@ export default function VerificationsPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="border-t border-slate-800 px-4 py-3 flex items-center justify-between">
-            <p className="text-xs text-slate-500">
-              Showing {Math.min((page - 1) * limit + 1, total)}–{Math.min(page * limit, total)} of {total}
-            </p>
-            <div className="flex items-center space-x-2">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs text-slate-400">{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page}
+          limit={limit}
+          total={total}
+          itemLabel="verifications"
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Single Verify Modal */}

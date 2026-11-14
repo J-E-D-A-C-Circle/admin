@@ -20,7 +20,11 @@ import {
   CheckCircle,
   FileMinus,
   MapPin,
-  QrCode
+  QrCode,
+  Paperclip,
+  Upload,
+  Trash2,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,9 +36,13 @@ export default function AssetDetailPage() {
   const [asset, setAsset] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [maintenanceLogs, setMaintenanceLogs] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [docType, setDocType] = useState<'Photo' | 'Invoice' | 'Warranty' | 'Other'>('Photo');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [attachError, setAttachError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'specs' | 'history' | 'maintenance'>('specs');
+  const [activeTab, setActiveTab] = useState<'specs' | 'history' | 'attachments' | 'maintenance'>('specs');
 
   useEffect(() => {
     if (!id) return;
@@ -43,12 +51,14 @@ export default function AssetDetailPage() {
       setLoading(true);
       setError('');
       try {
-        const [assetData, historyData] = await Promise.all([
+        const [assetData, historyData, attachmentData] = await Promise.all([
           api.getAsset(id),
-          api.getAssetHistory(id)
+          api.getAssetHistory(id),
+          api.getAssetAttachments(id).catch(() => []),
         ]);
         setAsset(assetData);
         setHistory(historyData);
+        setAttachments(attachmentData || []);
 
         if (assetData.categoryName === 'Vehicles') {
           const maintData = await api.getAssetMaintenance(id);
@@ -73,8 +83,8 @@ export default function AssetDetailPage() {
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'Damaged':
         return 'bg-red-500/10 text-red-400 border-red-500/20';
-      case 'Missing':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      case 'Auctioned':
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
       default:
         return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
     }
@@ -277,6 +287,21 @@ export default function AssetDetailPage() {
         >
           Timeline History
         </button>
+        <button
+          onClick={() => setActiveTab('attachments')}
+          className={`py-3 px-6 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center space-x-1.5 ${
+            activeTab === 'attachments'
+              ? 'border-amber-500 text-amber-500'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span>Photos & Docs</span>
+          {attachments.length > 0 && (
+            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500/20 text-amber-400">
+              {attachments.length}
+            </span>
+          )}
+        </button>
         {asset.categoryName === 'Vehicles' && (
           <button
             onClick={() => setActiveTab('maintenance')}
@@ -355,6 +380,12 @@ export default function AssetDetailPage() {
                   <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Department</p>
                     <p className="text-sm font-semibold text-slate-250 mt-0.5">{asset.departmentName}</p>
+                  </div>
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
+                    <p className="text-xs text-slate-500 font-bold uppercase">Sub-Location / Room</p>
+                    <p className="text-sm font-semibold text-slate-200 mt-0.5">
+                      {asset.subLocation || 'Not specified'}
+                    </p>
                   </div>
                   <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Assigned Employee</p>
@@ -522,6 +553,139 @@ export default function AssetDetailPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Photos & Documents Tab */}
+        {activeTab === 'attachments' && (
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                  <Paperclip className="w-5 h-5 text-amber-500" />
+                  <span>Asset Photos & Supporting Documents</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Upload photos, purchase invoices (PDF), or warranty certificates for this asset.
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value as 'Photo' | 'Invoice' | 'Warranty' | 'Other')}
+                  className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="Photo">Photo</option>
+                  <option value="Invoice">Invoice / Receipt</option>
+                  <option value="Warranty">Warranty</option>
+                  <option value="Other">Other Document</option>
+                </select>
+                <label className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center space-x-1.5 cursor-pointer transition-colors">
+                  {uploadingDoc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                  <span>{uploadingDoc ? 'Uploading...' : 'Upload File'}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden"
+                    disabled={uploadingDoc}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAttachError('');
+                      setUploadingDoc(true);
+                      try {
+                        const uploaded = await api.uploadFile(file, 'assets');
+                        await api.addAssetAttachment(asset.assetId, {
+                          fileName: uploaded.fileName || file.name,
+                          docType,
+                          fileUrl: uploaded.url,
+                          mimeType: uploaded.mimeType || file.type,
+                        });
+                        const refreshed = await api.getAssetAttachments(asset.assetId);
+                        setAttachments(refreshed || []);
+                      } catch (err: unknown) {
+                        setAttachError(err instanceof Error ? err.message : 'Upload failed');
+                      } finally {
+                        setUploadingDoc(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {attachError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
+                {attachError}
+              </div>
+            )}
+
+            {attachments.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">
+                No photos or documents attached to this asset yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {attachments.map((att) => {
+                  const isPdf = att.mimeType === 'application/pdf' || att.fileUrl?.endsWith('.pdf');
+                  return (
+                    <div
+                      key={att.id}
+                      className="bg-slate-950/60 border border-slate-800 rounded-xl overflow-hidden flex flex-col"
+                    >
+                      {isPdf ? (
+                        <a
+                          href={att.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="h-40 flex flex-col items-center justify-center bg-slate-950 text-slate-300 hover:text-amber-400 transition-colors p-4"
+                        >
+                          <FileText className="w-10 h-10 mb-2 text-amber-400" />
+                          <span className="text-xs font-semibold">Open PDF Document</span>
+                        </a>
+                      ) : (
+                        <a href={att.fileUrl} target="_blank" rel="noreferrer" className="block h-40 bg-slate-950">
+                          <img
+                            src={att.fileUrl}
+                            alt={att.fileName}
+                            className="w-full h-full object-cover"
+                          />
+                        </a>
+                      )}
+                      <div className="p-3 flex items-center justify-between gap-2 border-t border-slate-800">
+                        <div className="min-w-0">
+                          <span className="inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-slate-800 text-amber-400 mb-1">
+                            {att.docType}
+                          </span>
+                          <p className="text-xs font-medium text-slate-200 truncate" title={att.fileName}>
+                            {att.fileName}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {att.uploadedByName || 'User'} • {formatDate(att.createdAt)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await api.deleteAssetAttachment(asset.assetId, att.id);
+                              setAttachments((prev) => prev.filter((item) => item.id !== att.id));
+                            } catch (err: unknown) {
+                              setAttachError(err instanceof Error ? err.message : 'Failed to delete attachment');
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors shrink-0"
+                          title="Remove attachment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

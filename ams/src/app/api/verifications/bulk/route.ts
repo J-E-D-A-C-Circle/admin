@@ -38,10 +38,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No valid assets found' }, { status: 404 });
     }
 
-    const assetStatusMap = {
-      Verified: 'Active' as const,
-      Missing: 'Missing' as const,
-      Damaged: 'Damaged' as const,
+    const assetStatusMap: Partial<Record<'Verified' | 'Missing' | 'Damaged', 'Active' | 'Damaged'>> = {
+      Verified: 'Active',
+      Damaged: 'Damaged',
     };
     const targetAssetStatus = assetStatusMap[status];
 
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
         await tx
           .update(assets)
           .set({
-            status: targetAssetStatus,
+            ...(targetAssetStatus ? { status: targetAssetStatus } : {}),
             lastVerificationDate: new Date(),
           })
           .where(eq(assets.assetId, asset.assetId));

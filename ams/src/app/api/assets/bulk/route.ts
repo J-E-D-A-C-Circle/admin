@@ -10,7 +10,7 @@ const bulkEditSchema = z.object({
   assetIds: z.array(z.string()).min(1),
   updates: z.object({
     departmentId: z.number().int().positive().optional(),
-    status: z.enum(['Active', 'Under_Maintenance', 'Obsolete']).optional(),
+    status: z.enum(['Active', 'Under_Maintenance', 'Damaged', 'Obsolete', 'Auctioned']).optional(),
   }).refine((data) => data.departmentId !== undefined || data.status !== undefined, {
     message: "At least one field to update must be provided",
   })

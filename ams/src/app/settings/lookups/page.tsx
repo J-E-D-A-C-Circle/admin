@@ -18,6 +18,8 @@ import {
   Layers,
   Component,
   Users,
+  Package,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -65,6 +67,26 @@ export default function LookupsManagementPage() {
   // Inline edit state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editPayload, setEditPayload] = useState<any>({});
+
+  // Employee custody / clearance modal state
+  const [custodyModalOpen, setCustodyModalOpen] = useState(false);
+  const [custodyLoading, setCustodyLoading] = useState(false);
+  const [custodyData, setCustodyData] = useState<any>(null);
+
+  const openCustodyModal = async (empId: number) => {
+    setCustodyModalOpen(true);
+    setCustodyLoading(true);
+    setCustodyData(null);
+    try {
+      const data = await api.getEmployeeCustody(empId);
+      setCustodyData(data);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to load employee custody roster.');
+      setCustodyModalOpen(false);
+    } finally {
+      setCustodyLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -833,6 +855,17 @@ export default function LookupsManagementPage() {
                               </div>
                             ) : (
                               <div className="flex justify-end space-x-1.5">
+                                {activeTab === 'employees' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openCustodyModal(item.id)}
+                                    title="View Asset Custody & Clearance"
+                                    className="px-2 py-1 text-xs font-semibold text-amber-400 hover:text-slate-950 hover:bg-amber-500 border border-amber-500/30 rounded flex items-center space-x-1 transition-colors cursor-pointer"
+                                  >
+                                    <Package className="w-3.5 h-3.5" />
+                                    <span>Custody</span>
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => startEdit(item)}
                                   title="Edit Entry"
@@ -899,6 +932,111 @@ export default function LookupsManagementPage() {
                   <span>Confirm Delete</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Custody & Staff Clearance Modal */}
+      {custodyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Package className="w-4 h-4 text-amber-400" />
+                  <span>Employee Asset Custody &amp; Staff Clearance</span>
+                </h3>
+                {custodyData?.employee && (
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {custodyData.employee.name} ({custodyData.employee.employeeId}) •{' '}
+                    {custodyData.employee.position} — {custodyData.employee.stationName}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustodyModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {custodyLoading ? (
+                <div className="py-10 flex items-center justify-center text-slate-400 text-sm">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2 text-amber-500" />
+                  Loading assigned assets...
+                </div>
+              ) : custodyData ? (
+                <>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Clearance Status</p>
+                      <p
+                        className={`text-sm font-bold mt-1 ${
+                          custodyData.clearanceStatus === 'Cleared' ? 'text-emerald-400' : 'text-amber-400'
+                        }`}
+                      >
+                        {custodyData.clearanceStatus}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Active Assets Held</p>
+                      <p className="text-sm font-bold text-white mt-1">{custodyData.activeCount}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Total Value</p>
+                      <p className="text-sm font-bold text-white mt-1">
+                        GHS {Number(custodyData.totalValue || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {custodyData.assets?.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-emerald-400 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                      No assets assigned. This staff member is cleared for transfer or exit.
+                    </div>
+                  ) : (
+                    <div className="border border-slate-800 rounded-lg overflow-hidden">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-950 text-slate-400 uppercase">
+                          <tr>
+                            <th className="px-3 py-2">Asset ID</th>
+                            <th className="px-3 py-2">Name</th>
+                            <th className="px-3 py-2">Station / Room</th>
+                            <th className="px-3 py-2">Status</th>
+                            <th className="px-3 py-2 text-right">Open</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {custodyData.assets.map((a: any) => (
+                            <tr key={a.assetId}>
+                              <td className="px-3 py-2 font-mono text-amber-400">{a.assetId}</td>
+                              <td className="px-3 py-2 text-slate-200 font-medium">{a.name}</td>
+                              <td className="px-3 py-2 text-slate-400">
+                                {a.stationName || '—'}
+                                {a.subLocation ? ` (${a.subLocation})` : ''}
+                              </td>
+                              <td className="px-3 py-2 text-slate-300">{a.status.replace('_', ' ')}</td>
+                              <td className="px-3 py-2 text-right">
+                                <Link
+                                  href={`/assets/${encodeURIComponent(a.assetId)}`}
+                                  className="inline-flex items-center space-x-1 text-sky-400 hover:text-sky-300"
+                                >
+                                  <span>View</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           </div>
         </div>

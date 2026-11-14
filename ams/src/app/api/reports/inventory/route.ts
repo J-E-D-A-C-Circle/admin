@@ -85,8 +85,9 @@ export async function GET(req: NextRequest) {
     let activeCount = 0;
     let maintenanceCount = 0;
     let damagedCount = 0;
-    let missingCount = 0;
+    const missingCount = 0;
     let obsoleteCount = 0;
+    let auctionedCount = 0;
     let assignedCount = 0;
 
     const catMap = new Map<string, { name: string; count: number; value: number }>();
@@ -100,8 +101,8 @@ export async function GET(req: NextRequest) {
       if (row.status === 'Active') activeCount++;
       else if (row.status === 'Under_Maintenance') maintenanceCount++;
       else if (row.status === 'Damaged') damagedCount++;
-      else if (row.status === 'Missing') missingCount++;
       else if (row.status === 'Obsolete') obsoleteCount++;
+      else if (row.status === 'Auctioned') auctionedCount++;
 
       if (row.assignedEmployeeName) assignedCount++;
 
@@ -131,8 +132,8 @@ export async function GET(req: NextRequest) {
       { name: 'Active', count: activeCount },
       { name: 'Under Maintenance', count: maintenanceCount },
       { name: 'Damaged', count: damagedCount },
-      { name: 'Missing', count: missingCount },
       { name: 'Obsolete', count: obsoleteCount },
+      { name: 'Auctioned', count: auctionedCount },
     ].filter((s) => s.count > 0);
 
     const totalAssets = data.length;
@@ -148,6 +149,7 @@ export async function GET(req: NextRequest) {
         damagedCount,
         missingCount,
         obsoleteCount,
+        auctionedCount,
         assignedCount,
         unassignedCount: totalAssets - assignedCount,
         activeRate,

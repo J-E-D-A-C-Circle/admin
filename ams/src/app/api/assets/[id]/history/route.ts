@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { assetHistory, users } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-helper';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .from(assetHistory)
       .leftJoin(users, eq(assetHistory.userId, users.id))
       .where(eq(assetHistory.assetId, assetId))
-      .orderBy(assetHistory.createdAt); // oldest first for timeline, or desc? typically desc for recent first, but we can do desc
+      .orderBy(desc(assetHistory.createdAt), desc(assetHistory.id));
 
     return NextResponse.json(history);
   } catch (err: any) {

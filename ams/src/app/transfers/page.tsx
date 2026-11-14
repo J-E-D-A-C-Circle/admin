@@ -11,8 +11,8 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  ChevronLeft,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
 import {
   Select,
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 type Transfer = {
   id: number;
@@ -42,6 +43,7 @@ type Transfer = {
   approvedByUserId?: number;
   approvalDate?: string;
   signatureUrl?: string;
+  trail?: Transfer[];
 };
 
 export default function TransfersPage() {
@@ -57,7 +59,7 @@ export default function TransfersPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [userRole, setUserRole] = useState<string>('');
 
-  const limit = 15;
+  const [limit, setLimit] = useState(20);
 
   const [form, setForm] = useState({
     assetId: '',
@@ -77,9 +79,105 @@ export default function TransfersPage() {
   const [assetSuggestions, setAssetSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Quick Add Employee modal state
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [empForm, setEmpForm] = useState({
+    employeeId: '',
+    name: '',
+    position: '',
+    regionId: '',
+    stationId: '',
+    departmentId: '',
+  });
+  const [empStations, setEmpStations] = useState<any[]>([]);
+  const [empCustomPosition, setEmpCustomPosition] = useState('');
+  const [empSubmitting, setEmpSubmitting] = useState(false);
+  const [empError, setEmpError] = useState('');
+
+  const positionOptions = Array.from(
+    new Set([
+      'Licensing Officer',
+      'Vehicle Examiner',
+      'IT Officer',
+      'Transport Officer',
+      'Asset Officer',
+      'Accountant',
+      'Administrative Officer',
+      'Internal Auditor',
+      'Station Manager',
+      'Regional Manager',
+      'Stores Officer',
+      'Security Officer',
+      'Driver',
+      ...((lookups.employees || []).map((e: any) => e.position).filter(Boolean) as string[]),
+    ])
+  ).sort();
+
+  const openAddEmployeeModal = () => {
+    const regId = form.toRegionId || '';
+    setEmpForm({
+      employeeId: '',
+      name: '',
+      position: '',
+      regionId: regId,
+      stationId: form.toStationId || '',
+      departmentId: form.toDepartmentId || '',
+    });
+    setEmpCustomPosition('');
+    if (regId && lookups.stations) {
+      setEmpStations(lookups.stations.filter((s: any) => s.regionId === parseInt(regId)));
+    } else {
+      setEmpStations(lookups.stations || []);
+    }
+    setEmpError('');
+    setShowEmployeeModal(true);
+  };
+
+  const handleCreateEmployeeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmpError('');
+    const finalPosition = empForm.position === '__other__' ? empCustomPosition.trim() : empForm.position.trim();
+    if (!finalPosition) {
+      setEmpError('Please select or enter a position / role.');
+      return;
+    }
+    if (!empForm.stationId || !empForm.departmentId) {
+      setEmpError('Please select region, station, and department.');
+      return;
+    }
+    setEmpSubmitting(true);
+    try {
+      await api.createEmployee({
+        employeeId: empForm.employeeId.trim(),
+        name: empForm.name.trim(),
+        position: finalPosition,
+        departmentId: parseInt(empForm.departmentId),
+        stationId: parseInt(empForm.stationId),
+      });
+      const updatedLookups = await api.getLookups();
+      setLookups(updatedLookups);
+      const newEmp = updatedLookups?.employees?.find(
+        (emp: any) => emp.employeeId === empForm.employeeId.trim()
+      );
+      if (newEmp) {
+        setForm((prev) => ({
+          ...prev,
+          toRegionId: empForm.regionId || prev.toRegionId,
+          toStationId: String(newEmp.stationId),
+          newEmployeeId: String(newEmp.id),
+        }));
+      }
+      setShowEmployeeModal(false);
+    } catch (err: any) {
+      setEmpError(err.message || 'Failed to create employee.');
+    } finally {
+      setEmpSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     fetchTransfers();
-  }, [page, search]);
+  }, [page, limit, search]);
 
   useEffect(() => {
     api.getLookups().then(setLookups).catch(console.error);
@@ -188,6 +286,7 @@ export default function TransfersPage() {
         toRegionId: parseInt(form.toRegionId),
         toStationId: parseInt(form.toStationId),
         toDepartmentId: parseInt(form.toDepartmentId),
+        newEmployeeId: form.newEmployeeId ? parseInt(form.newEmployeeId) : null,
         reason: form.reason,
       });
       setSuccessMsg(`Bulk transfers initiated for ${ids.length} assets.`);
@@ -392,53 +491,107 @@ export default function TransfersPage() {
                           <td className="px-4 py-3 text-slate-400 text-xs">{t.transferredBy || 'System'}</td>
                         </tr>
 
-                        {isExpanded && (
-                          <tr className="bg-slate-950/60 border-t border-slate-800/40">
-                            <td colSpan={8} className="px-6 py-4">
-                              <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 space-y-3">
-                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-semibold uppercase tracking-wider text-amber-400">Transfer Trail</span>
-                                    <span className="text-slate-600">•</span>
-                                    <span className="text-slate-300">
-                                      Account Responsible:{' '}
-                                      <span className="font-semibold text-white">{t.transferredBy || 'System'}</span>
-                                      {t.transferredByUsername && (
-                                        <span className="ml-1 font-mono text-slate-400">(@{t.transferredByUsername})</span>
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="text-slate-400 font-mono">
-                                    Timestamp: {new Date(t.transferDate).toLocaleString()}
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                  <div className="rounded-md bg-slate-950/60 border border-slate-800/80 p-3 space-y-1">
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">From (Previous)</p>
-                                    <p className="text-slate-200 font-semibold">{t.fromStation || 'N/A'}</p>
-                                    <p className="text-slate-400">Region: <span className="text-slate-200">{t.fromRegion || 'N/A'}</span></p>
-                                    <p className="text-slate-400">Department: <span className="text-slate-200">{t.fromDepartment || 'N/A'}</span></p>
-                                    <p className="text-slate-400">Custodian: <span className="text-slate-200">{t.previousEmployee || 'Unassigned'}</span></p>
+                        {isExpanded && (() => {
+                          const trail = Array.isArray(t.trail) && t.trail.length > 0 ? t.trail : [t];
+                          return (
+                            <tr className="bg-slate-950/60 border-t border-slate-800/40">
+                              <td colSpan={8} className="px-6 py-4">
+                                <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800 text-xs">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="font-semibold uppercase tracking-wider text-amber-400">Transfer Trail</span>
+                                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">
+                                        {trail.length} {trail.length === 1 ? 'transfer' : 'transfers'}
+                                      </span>
+                                      <span className="text-slate-600">•</span>
+                                      <span className="text-slate-300">
+                                        Latest by:{' '}
+                                        <span className="font-semibold text-white">{t.transferredBy || 'System'}</span>
+                                        {t.transferredByUsername && (
+                                          <span className="ml-1 font-mono text-slate-400">(@{t.transferredByUsername})</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="text-slate-400 font-mono">
+                                      Latest: {new Date(t.transferDate).toLocaleString()}
+                                    </div>
                                   </div>
 
-                                  <div className="rounded-md bg-slate-950/60 border border-emerald-900/40 p-3 space-y-1">
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">To (Updated)</p>
-                                    <p className="text-white font-semibold">{t.toStation || 'N/A'}</p>
-                                    <p className="text-slate-400">Region: <span className="text-slate-200">{t.toRegion || 'N/A'}</span></p>
-                                    <p className="text-slate-400">Department: <span className="text-slate-200">{t.toDepartment || 'N/A'}</span></p>
-                                    <p className="text-slate-400">Custodian: <span className="text-emerald-300 font-medium">{t.newEmployee || 'Unassigned'}</span></p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                    {trail.map((entry: Transfer, idx: number) => {
+                                      const isLatest = idx === 0;
+                                      return (
+                                        <div
+                                          key={entry.id ?? idx}
+                                          className={`rounded-md border p-3 flex flex-col justify-between space-y-2 ${isLatest
+                                            ? 'bg-slate-950/70 border-emerald-900/50'
+                                            : 'bg-slate-950/60 border-slate-800/80'
+                                            }`}
+                                        >
+                                          <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-800/70">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                                                  #{trail.length - idx}
+                                                </span>
+                                                {isLatest && (
+                                                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-semibold uppercase">
+                                                    Latest
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <span className="text-[10px] text-slate-400 font-mono">
+                                                {new Date(entry.transferDate).toLocaleDateString()}
+                                              </span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">From</p>
+                                              <p className="text-slate-200 font-semibold truncate" title={entry.fromStation || 'N/A'}>
+                                                {entry.fromStation || 'N/A'}
+                                              </p>
+                                              <p className="text-[11px] text-slate-400 truncate">
+                                                {entry.fromRegion || 'N/A'} • {entry.fromDepartment || 'N/A'}
+                                              </p>
+                                              <p className="text-[11px] text-slate-400 truncate">
+                                                Custodian: <span className="text-slate-200">{entry.previousEmployee || 'Unassigned'}</span>
+                                              </p>
+                                            </div>
+
+                                            <div className="space-y-1 pt-1.5 border-t border-slate-800/60">
+                                              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">To</p>
+                                              <p className="text-white font-semibold truncate" title={entry.toStation || 'N/A'}>
+                                                {entry.toStation || 'N/A'}
+                                              </p>
+                                              <p className="text-[11px] text-slate-400 truncate">
+                                                {entry.toRegion || 'N/A'} • {entry.toDepartment || 'N/A'}
+                                              </p>
+                                              <p className="text-[11px] text-slate-400 truncate">
+                                                Custodian: <span className="text-emerald-300 font-medium">{entry.newEmployee || 'Unassigned'}</span>
+                                              </p>
+                                            </div>
+
+                                            <div className="pt-1.5 border-t border-slate-800/60">
+                                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Reason</p>
+                                              <p className="text-slate-200 text-[11px] leading-relaxed break-words">
+                                                {entry.reason || '—'}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          <div className="pt-1.5 border-t border-slate-800/60 text-[10px] text-slate-500 truncate">
+                                            By: <span className="text-slate-300">{entry.transferredBy || 'System'}</span>
+                                            {entry.transferredByUsername ? ` (@${entry.transferredByUsername})` : ''}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
-
-                                <div className="text-xs text-slate-400">
-                                  <span className="font-semibold text-slate-300">Reason: </span>
-                                  {t.reason}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                              </td>
+                            </tr>
+                          );
+                        })()}
                       </React.Fragment>
                     );
                   })
@@ -449,30 +602,17 @@ export default function TransfersPage() {
         </>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="border-t border-slate-800 px-4 py-3 flex items-center justify-between">
-            <p className="text-xs text-slate-500">
-              Showing {Math.min((page - 1) * limit + 1, totalCount)}–{Math.min(page * limit, totalCount)} of {totalCount}
-            </p>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs text-slate-400">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page}
+          limit={limit}
+          total={totalCount}
+          itemLabel="transfers"
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* Modal */}
@@ -629,7 +769,17 @@ export default function TransfersPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className={labelClass}>New Employee</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">New Employee</label>
+                    <button
+                      type="button"
+                      onClick={openAddEmployeeModal}
+                      className="flex items-center space-x-1 px-2 py-0.5 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 hover:border-transparent rounded text-[11px] font-semibold transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add Employee</span>
+                    </button>
+                  </div>
                   <Select
                     value={form.newEmployeeId || 'unassigned'}
                     onValueChange={(val) => updateForm('newEmployeeId', val === 'unassigned' ? '' : val)}
@@ -719,14 +869,44 @@ export default function TransfersPage() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Destination Dept *</label>
-                <Select value={form.toDepartmentId} onValueChange={(val) => updateForm('toDepartmentId', val)}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Select dept" /></SelectTrigger>
-                  <SelectContent>
-                    {lookups.departments?.map((d: any) => (<SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Destination Dept *</label>
+                  <Select value={form.toDepartmentId} onValueChange={(val) => updateForm('toDepartmentId', val)}>
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Select dept" /></SelectTrigger>
+                    <SelectContent>
+                      {lookups.departments?.map((d: any) => (<SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">New Employee</label>
+                    <button
+                      type="button"
+                      onClick={openAddEmployeeModal}
+                      className="flex items-center space-x-1 px-2 py-0.5 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 hover:border-transparent rounded text-[11px] font-semibold transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add Employee</span>
+                    </button>
+                  </div>
+                  <Select
+                    value={form.newEmployeeId || 'unassigned'}
+                    onValueChange={(val) => updateForm('newEmployeeId', val === 'unassigned' ? '' : val)}
+                    disabled={!form.toStationId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {filteredEmployees.map((e: any) => (
+                        <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <label className={labelClass}>Reason *</label>
@@ -744,6 +924,147 @@ export default function TransfersPage() {
                 <button type="submit" disabled={submitting} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm flex items-center space-x-2 disabled:opacity-60">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowLeftRight className="w-4 h-4" />}
                   <span>{submitting ? 'Submitting...' : 'Bulk Transfer'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Employee Modal */}
+      {showEmployeeModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+              <h2 className="text-base font-bold text-white">Add New Employee</h2>
+              <button onClick={() => setShowEmployeeModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateEmployeeSubmit} className="p-5 space-y-4">
+              {empError && (
+                <div className="flex items-start space-x-2 p-3 bg-red-950/40 border border-red-900/50 text-red-200 rounded-lg text-xs">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
+                  <span>{empError}</span>
+                </div>
+              )}
+              <div>
+                <label className={labelClass}>Staff / Employee ID *</label>
+                <input
+                  type="text"
+                  required
+                  value={empForm.employeeId}
+                  onChange={(e) => setEmpForm((p) => ({ ...p, employeeId: e.target.value }))}
+                  className={inputClass}
+                  placeholder="e.g. EMP-GAR-010"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={empForm.name}
+                    onChange={(e) => setEmpForm((p) => ({ ...p, name: e.target.value }))}
+                    className={inputClass}
+                    placeholder="e.g. Kwame Mensah"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Position / Role *</label>
+                  <Select
+                    value={empForm.position}
+                    onValueChange={(val) => setEmpForm((p) => ({ ...p, position: val }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positionOptions.map((pos) => (
+                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                      ))}
+                      <SelectItem value="__other__">Other (Specify)...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {empForm.position === '__other__' && (
+                <div>
+                  <label className={labelClass}>Custom Position / Role *</label>
+                  <input
+                    type="text"
+                    required
+                    value={empCustomPosition}
+                    onChange={(e) => setEmpCustomPosition(e.target.value)}
+                    className={inputClass}
+                    placeholder="Enter position title"
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Region *</label>
+                  <Select
+                    value={empForm.regionId}
+                    onValueChange={(val) => {
+                      setEmpForm((p) => ({ ...p, regionId: val, stationId: '' }));
+                      setEmpStations((lookups.stations || []).filter((s: any) => s.regionId === parseInt(val)));
+                    }}
+                  >
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Select region" /></SelectTrigger>
+                    <SelectContent>
+                      {lookups.regions?.map((r: any) => (
+                        <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className={labelClass}>Station *</label>
+                  <Select
+                    value={empForm.stationId}
+                    onValueChange={(val) => setEmpForm((p) => ({ ...p, stationId: val }))}
+                    disabled={!empForm.regionId}
+                  >
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Select station" /></SelectTrigger>
+                    <SelectContent>
+                      {empStations.map((s: any) => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Department *</label>
+                <Select
+                  value={empForm.departmentId}
+                  onValueChange={(val) => setEmpForm((p) => ({ ...p, departmentId: val }))}
+                >
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {lookups.departments?.map((d: any) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEmployeeModal(false)}
+                  className="px-4 py-2 border border-slate-700 text-slate-300 hover:bg-slate-800 rounded-lg text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={empSubmitting}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-sm flex items-center space-x-2 disabled:opacity-60"
+                >
+                  {empSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>{empSubmitting ? 'Saving...' : 'Save Employee'}</span>
                 </button>
               </div>
             </form>

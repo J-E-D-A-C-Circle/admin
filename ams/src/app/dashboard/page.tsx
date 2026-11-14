@@ -13,7 +13,6 @@ import {
   MapPin,
   Loader2,
   Bell,
-  Car,
   Wrench,
   ShieldCheck,
   ClipboardCheck,
@@ -162,11 +161,11 @@ export default function DashboardPage() {
       iconColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20'
     },
     {
-      title: 'Missing Assets',
-      value: kpis.missing,
-      subtitle: 'Unaccounted units',
+      title: 'Auctioned Assets',
+      value: kpis.auctioned ?? 0,
+      subtitle: 'Disposed via auction',
       icon: AlertTriangle,
-      badge: 'Attention',
+      badge: 'Auctioned',
       variant: 'warning' as const,
       iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
     },
@@ -189,30 +188,6 @@ export default function DashboardPage() {
       iconColor: kpis.overdueVerifications > 0 ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-slate-400 bg-slate-800 border-slate-700',
       onClick: kpis.overdueVerifications > 0 ? openOverdueModal : undefined
     }
-  ];
-
-  const fleetKpiCards = [
-    {
-      title: 'Total Fleet Units',
-      value: kpis.totalVehicles ?? 0,
-      subtitle: 'Registered government vehicles',
-      icon: Car,
-      iconColor: 'text-teal-400 bg-teal-500/10 border-teal-500/20'
-    },
-    {
-      title: 'Active In-Field',
-      value: kpis.vehiclesActive ?? 0,
-      subtitle: 'Operational transport',
-      icon: ShieldCheck,
-      iconColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-    },
-    {
-      title: 'Under Maintenance',
-      value: kpis.vehiclesMaintenance ?? 0,
-      subtitle: 'Garage or workshop repairs',
-      icon: Wrench,
-      iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-    },
   ];
 
   const COLORS = [
@@ -393,42 +368,6 @@ export default function DashboardPage() {
               </Card>
             </Link>
           </div>
-
-          {/* Fleet Overview */}
-          <Card className="p-5">
-            <CardHeader className="p-0 pb-4 border-b border-slate-800/60 mb-4">
-              <div className="flex items-center space-x-2">
-                <Car className="w-4 h-4 text-teal-400" />
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-300">
-                  Fleet & Transport Analytics
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {fleetKpiCards.map((kpi, idx) => {
-                const Icon = kpi.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-xl border border-slate-800/80 bg-slate-950/40 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                        {kpi.title}
-                      </p>
-                      <h4 className="text-2xl font-bold text-white font-mono mt-1">
-                        {kpi.value.toLocaleString()}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{kpi.subtitle}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg border ${kpi.iconColor}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
         </TabsContent>
 
         {/* Tab 2: Regional Map & Categories */}

@@ -32,6 +32,7 @@ export default function AssetRegisterPage() {
     regionId: '',
     stationId: '',
     departmentId: '',
+    subLocation: '',
     assignedEmployeeId: '',
     acquisitionDate: new Date().toISOString().split('T')[0],
     licensePlate: '',
@@ -163,6 +164,7 @@ export default function AssetRegisterPage() {
         regionId: parseInt(form.regionId),
         stationId: parseInt(form.stationId),
         departmentId: parseInt(form.departmentId),
+        subLocation: form.subLocation.trim() || null,
         assignedEmployeeId: form.assignedEmployeeId ? parseInt(form.assignedEmployeeId) : null,
         acquisitionDate: form.acquisitionDate,
       };
@@ -452,6 +454,18 @@ export default function AssetRegisterPage() {
               </Select>
             </div>
             <div>
+              <label className={labelClass}>
+                Sub-Location / Room <span className="text-slate-500 font-normal normal-case">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={form.subLocation}
+                onChange={(e) => updateForm('subLocation', e.target.value)}
+                placeholder="e.g. Block B, 2nd Floor - Room 204"
+                className={inputClass}
+              />
+            </div>
+            <div>
               <label className={labelClass}>Department *</label>
               <Select
                 value={form.departmentId}
@@ -574,15 +588,39 @@ export default function AssetRegisterPage() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Position / Title *</label>
-                <input
-                  type="text"
-                  required
+                <label className={labelClass}>Position / Role *</label>
+                <Select
                   value={empForm.position}
-                  onChange={(e) => setEmpForm((p) => ({ ...p, position: e.target.value }))}
-                  className={inputClass}
-                  placeholder="e.g. Licensing Officer"
-                />
+                  onValueChange={(val) => setEmpForm((p) => ({ ...p, position: val }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      new Set([
+                        'Licensing Officer',
+                        'Vehicle Examiner',
+                        'IT Officer',
+                        'Transport Officer',
+                        'Asset Officer',
+                        'Accountant',
+                        'Administrative Officer',
+                        'Internal Auditor',
+                        'Station Manager',
+                        'Regional Manager',
+                        'Stores Officer',
+                        'Security Officer',
+                        'Driver',
+                        ...((lookups.employees || []).map((e: any) => e.position).filter(Boolean) as string[]),
+                      ])
+                    )
+                      .sort()
+                      .map((pos) => (
+                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

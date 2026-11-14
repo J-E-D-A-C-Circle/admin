@@ -10,9 +10,14 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/jpg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
+  'application/pdf': '.pdf',
 };
 
-function hasValidImageMagicBytes(buf: Buffer, mime: string): boolean {
+function hasValidMagicBytes(buf: Buffer, mime: string): boolean {
+  if (buf.length < 5) return false;
+  if (mime === 'application/pdf') {
+    return buf.toString('ascii', 0, 4) === '%PDF';
+  }
   if (buf.length < 12) return false;
   if (mime === 'image/jpeg' || mime === 'image/jpg') {
     return buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
@@ -48,21 +53,23 @@ export async function POST(req: NextRequest) {
     const ext = ALLOWED_TYPES[file.type];
     if (!ext) {
       return NextResponse.json(
-        { message: 'Invalid file type. Only JPEG, PNG, and WEBP images are allowed.' },
+        { message: 'Invalid file type. Only JPEG, PNG, WEBP images and PDF documents are allowed.' },
         { status: 400 }
       );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    if (!hasValidImageMagicBytes(buffer, file.type)) {
+    if (!hasValidMagicBytes(buffer, file.type)) {
       return NextResponse.json(
-        { message: 'File content does not match a valid image signature.' },
+        { message: 'File content does not match a valid image or PDF signature.' },
         { status: 400 }
       );
     }
 
+    const rawFolder = formData.get('folder');
+    const folder = rawFolder === 'assets' ? 'assets' : 'verifications';
     const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'verifications');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', folder);
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -70,7 +77,10 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(uploadDir, filename);
     fs.writeFileSync(filePath, buffer);
 
-    return NextResponse.json({ url: `/api/uploads/verifications/${filename}` }, { status: 201 });
+    return NextResponse.json(
+      { url: `/api/uploads/${folder}/${filename}`, fileName: file.name, mimeType: file.type },
+      { status: 201 }
+    );
   } catch (err: unknown) {
     console.error('File upload error:', err);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

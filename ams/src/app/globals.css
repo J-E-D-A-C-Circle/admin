@@ -158,6 +158,16 @@ html.light select {
   color: #0f172a !important;
 }
 
+html.light select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+html.dark select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
 html.light input::placeholder,
 html.light textarea::placeholder {
   color: #94a3b8 !important;

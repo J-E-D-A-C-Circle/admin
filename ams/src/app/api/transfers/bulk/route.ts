@@ -11,6 +11,7 @@ const bulkTransferSchema = z.object({
   toRegionId: z.number().int().positive(),
   toStationId: z.number().int().positive(),
   toDepartmentId: z.number().int().positive(),
+  newEmployeeId: z.number().int().positive().optional().nullable(),
   reason: z.string().min(1),
 });
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Validation failed', errors: parsed.error.errors }, { status: 400 });
     }
 
-    const { assetIds, toRegionId, toStationId, toDepartmentId, reason } = parsed.data;
+    const { assetIds, toRegionId, toStationId, toDepartmentId, newEmployeeId, reason } = parsed.data;
 
     // Fetch existing assets
     const existingAssets = await db.select().from(assets).where(inArray(assets.assetId, assetIds));
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
           fromDepartmentId: asset.departmentId,
           toDepartmentId,
           previousEmployeeId: asset.assignedEmployeeId,
-          newEmployeeId: null,
+          newEmployeeId: newEmployeeId ?? null,
           reason,
           transferredByUserId: caller.sub,
           transferDate: now,
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
             regionId: toRegionId,
             stationId: toStationId,
             departmentId: toDepartmentId,
-            assignedEmployeeId: null,
+            assignedEmployeeId: newEmployeeId ?? null,
             updatedAt: now,
           })
           .where(eq(assets.assetId, asset.assetId));

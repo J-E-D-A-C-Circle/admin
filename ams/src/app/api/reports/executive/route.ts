@@ -19,8 +19,7 @@ export async function GET(req: NextRequest) {
       .where(and(eq(assets.status, 'Active'), isNotNull(assets.lastVerificationDate)));
     const verified = verifiedRes?.value || 0;
 
-    const [missingRes] = await db.select({ value: countFn() }).from(assets).where(eq(assets.status, 'Missing'));
-    const missing = missingRes?.value || 0;
+    const missing = 0;
 
     const [damagedRes] = await db.select({ value: countFn() }).from(assets).where(eq(assets.status, 'Damaged'));
     const damaged = damagedRes?.value || 0;
@@ -49,19 +48,9 @@ export async function GET(req: NextRequest) {
       value: cg.count,
     }));
 
-    // 4. Top Stations with Missing Assets
-    const topMissingGroups = await db
-      .select({ stationId: assets.stationId, count: countFn() })
-      .from(assets)
-      .where(eq(assets.status, 'Missing'))
-      .groupBy(assets.stationId)
-      .orderBy(desc(countFn()))
-      .limit(5);
+    // 4. Top Stations with Missing Assets (removed from asset status)
+    const topStationsMissing: { stationName: string; count: number }[] = [];
     const stationsList = await db.select().from(stations);
-    const topStationsMissing = topMissingGroups.map(t => ({
-      stationName: stationsList.find(s => s.id === t.stationId)?.name || 'Unknown',
-      count: t.count,
-    }));
 
     // 5. Top Stations with Most Assets
     const topAssetGroups = await db

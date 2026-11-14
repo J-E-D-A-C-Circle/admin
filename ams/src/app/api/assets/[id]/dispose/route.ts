@@ -27,8 +27,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const [asset] = await db.select().from(assets).where(eq(assets.assetId, id)).limit(1);
     if (!asset) return NextResponse.json({ message: 'Asset not found' }, { status: 404 });
-    if (asset.status === 'Obsolete') {
-      return NextResponse.json({ message: 'Asset is already marked as obsolete' }, { status: 409 });
+    if (asset.status === 'Obsolete' || asset.status === 'Auctioned') {
+      return NextResponse.json({ message: 'Asset is already marked as obsolete or auctioned' }, { status: 409 });
     }
 
     const { disposalMethod, disposalDate, realisedValue, notes } = parsed.data;
@@ -48,7 +48,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
 
       // Update asset status
-      await tx.update(assets).set({ status: 'Obsolete', updatedAt: new Date() }).where(eq(assets.assetId, id));
+      const nextStatus = disposalMethod === 'Auction' ? 'Auctioned' : 'Obsolete';
+      await tx.update(assets).set({ status: nextStatus, updatedAt: new Date() }).where(eq(assets.assetId, id));
 
       // Log history
       await tx.insert(assetHistory).values({

@@ -8,10 +8,9 @@ import {
   Calendar,
   User,
   ShieldAlert,
-  ChevronLeft,
-  ChevronRight,
   Terminal,
 } from 'lucide-react';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 type AuditLog = {
   id: number;
@@ -31,11 +30,11 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const limit = 20;
+  const [limit, setLimit] = useState(20);
 
   useEffect(() => {
     fetchLogs();
-  }, [page, search]);
+  }, [page, limit, search]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -49,8 +48,6 @@ export default function AuditLogsPage() {
       setLoading(false);
     }
   };
-
-  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="space-y-5">
@@ -132,30 +129,17 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="border-t border-slate-800 px-4 py-3 flex items-center justify-between">
-            <p className="text-xs text-slate-500 font-sans">
-              Showing {Math.min((page - 1) * limit + 1, total)}–{Math.min(page * limit, total)} of {total} logs
-            </p>
-            <div className="flex items-center space-x-2 font-sans">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs text-slate-400">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-1.5 rounded border border-slate-800 text-slate-400 hover:bg-slate-800 disabled:opacity-40"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page}
+          limit={limit}
+          total={total}
+          itemLabel="logs"
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );

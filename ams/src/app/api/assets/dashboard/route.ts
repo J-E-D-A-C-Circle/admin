@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { assets, stations, departments, regions, assetCategories } from '@/db/schema';
-import { eq, and, count as countFn, isNotNull, ne, or, isNull, lte } from 'drizzle-orm';
+import { eq, and, count as countFn, ne, or, isNull, lte } from 'drizzle-orm';
 import { verifyAuth, getScopeWhere, unauthorizedResponse } from '@/lib/auth-helper';
 
 export async function GET(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     // 1. Total counts
     const [totalRes] = await db.select({ value: countFn() }).from(assets).where(whereClause);
     const [activeRes] = await db.select({ value: countFn() }).from(assets).where(and(eq(assets.status, 'Active'), whereClause));
-    const [missingRes] = await db.select({ value: countFn() }).from(assets).where(and(eq(assets.status, 'Missing'), whereClause));
+    const [auctionedRes] = await db.select({ value: countFn() }).from(assets).where(and(eq(assets.status, 'Auctioned'), whereClause));
     const [damagedRes] = await db.select({ value: countFn() }).from(assets).where(and(eq(assets.status, 'Damaged'), whereClause));
     const [maintenanceRes] = await db.select({ value: countFn() }).from(assets).where(and(eq(assets.status, 'Under_Maintenance'), whereClause));
 
@@ -43,20 +43,6 @@ export async function GET(req: NextRequest) {
     const [stationsCount] = await db.select({ value: countFn() }).from(stations);
     const [deptsCount] = await db.select({ value: countFn() }).from(departments);
     const [regionsCount] = await db.select({ value: countFn() }).from(regions);
-
-    // 2. Fleet / Vehicle KPIs — assets with a license plate are vehicles
-    const vehicleBaseConditions = [...conditions, isNotNull(assets.licensePlate)];
-    const vehicleWhere = vehicleBaseConditions.length > 0 ? and(...vehicleBaseConditions) : undefined;
-
-    const [totalVehiclesRes] = await db.select({ value: countFn() }).from(assets).where(vehicleWhere);
-    const [vehiclesActiveRes] = await db
-      .select({ value: countFn() })
-      .from(assets)
-      .where(and(eq(assets.status, 'Active'), vehicleWhere));
-    const [vehiclesMaintenanceRes] = await db
-      .select({ value: countFn() })
-      .from(assets)
-      .where(and(eq(assets.status, 'Under_Maintenance'), vehicleWhere));
 
     // 3. Assets By Region
     const regionGroups = await db
@@ -120,7 +106,7 @@ export async function GET(req: NextRequest) {
 
     const ageBuckets = ['0-1 Yr', '1-3 Yrs', '3-5 Yrs', '5+ Yrs'];
     const assetsByAge = ageBuckets.map((bucket) => {
-      const entry: any = { name: bucket };
+      const entry: Record<string, string | number> = { name: bucket };
       categories.forEach((cat) => {
         entry[cat] = 0;
       });
@@ -139,24 +125,20 @@ export async function GET(req: NextRequest) {
       else if (ageYrs <= 3) bucketIdx = 1;
       else if (ageYrs <= 5) bucketIdx = 2;
 
-      assetsByAge[bucketIdx][cat] = (assetsByAge[bucketIdx][cat] || 0) + 1;
+      assetsByAge[bucketIdx][cat] = Number(assetsByAge[bucketIdx][cat] || 0) + 1;
     });
 
     return NextResponse.json({
       kpis: {
         total: totalRes?.value || 0,
         active: activeRes?.value || 0,
-        missing: missingRes?.value || 0,
+        auctioned: auctionedRes?.value || 0,
         damaged: damagedRes?.value || 0,
         underMaintenance: maintenanceRes?.value || 0,
         overdueVerifications: overdueVerificationsRes?.value || 0,
         stations: stationsCount?.value || 0,
         departments: deptsCount?.value || 0,
         regions: regionsCount?.value || 0,
-        // Fleet KPIs
-        totalVehicles: totalVehiclesRes?.value || 0,
-        vehiclesActive: vehiclesActiveRes?.value || 0,
-        vehiclesMaintenance: vehiclesMaintenanceRes?.value || 0,
       },
       charts: {
         assetsByRegion,
@@ -166,8 +148,9 @@ export async function GET(req: NextRequest) {
         categoriesList: categories,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Fetch dashboard error:', err);
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
   }
 }

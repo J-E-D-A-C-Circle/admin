@@ -21,6 +21,9 @@ import {
   CheckCircle2,
   Users,
   Archive,
+  Gavel,
+  DollarSign,
+  Clock,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -41,8 +44,8 @@ const STATUS_COLORS: Record<string, string> = {
   Active: '#10b981',
   'Under Maintenance': '#f59e0b',
   Damaged: '#f97316',
-  Missing: '#ef4444',
   Obsolete: '#64748b',
+  Auctioned: '#8b5cf6',
 };
 import {
   Select,
@@ -79,11 +82,32 @@ const reportTypes: ReportType[] = [
     color: 'text-amber-400',
   },
   {
-    key: 'missing',
-    label: 'Missing Assets Report',
-    description: 'All assets currently marked as Missing.',
-    icon: <AlertTriangle className="w-6 h-6" />,
-    color: 'text-red-400',
+    key: 'auctioned',
+    label: 'Auctioned Assets Report',
+    description: 'All assets disposed via auction with optional realised values.',
+    icon: <Gavel className="w-6 h-6" />,
+    color: 'text-purple-400',
+  },
+  {
+    key: 'valuation',
+    label: 'Valuation & Depreciation',
+    description: 'Original cost (optional), accumulated depreciation & net book value.',
+    icon: <DollarSign className="w-6 h-6" />,
+    color: 'text-emerald-400',
+  },
+  {
+    key: 'overdue',
+    label: 'Overdue Verifications',
+    description: 'Active assets not verified in the last 90 days or never verified.',
+    icon: <Clock className="w-6 h-6" />,
+    color: 'text-rose-400',
+  },
+  {
+    key: 'custodian',
+    label: 'Custodian Accountability',
+    description: 'Assigned employee asset custody and unassigned pool inventory.',
+    icon: <Users className="w-6 h-6" />,
+    color: 'text-sky-400',
   },
   {
     key: 'damaged',
@@ -566,13 +590,13 @@ export default function ReportsPage() {
           })()}
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center space-x-2 text-sm font-semibold text-white">
               <FileText className="w-4 h-4 text-amber-400" />
               <span>Report Results</span>
             </div>
             {result.summary && (
-              <div className="flex items-center space-x-4 text-xs text-slate-400">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                 {Object.entries(result.summary).map(([k, v]) => (
                   <span key={k}>
                     <span className="font-semibold text-slate-300">{String(v)}</span>{' '}

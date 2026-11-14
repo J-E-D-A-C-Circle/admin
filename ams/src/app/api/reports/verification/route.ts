@@ -48,12 +48,8 @@ export async function GET(req: NextRequest) {
         .where(and(...verifiedConditions));
       const verified = verifiedRes?.value || 0;
 
-      // 3. Missing assets in this station
-      const [missingRes] = await db
-        .select({ value: countFn() })
-        .from(assets)
-        .where(and(eq(assets.stationId, s.id), eq(assets.status, 'Missing')));
-      const missing = missingRes?.value || 0;
+      // 3. Missing assets in this station (no longer an asset status)
+      const missing = 0;
 
       const rate = expected > 0 ? parseFloat(((verified / expected) * 100).toFixed(1)) : 0;
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
 import { assets, assetTransfers, assetHistory, notifications, regions, stations, departments, employees, users } from '@/db/schema';
-import { eq, and, sql, like, or, count as countFn } from 'drizzle-orm';
+import { eq, and, sql, like, or, inArray, desc, count as countFn, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/mysql-core';
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-helper';
 import { logAudit } from '@/lib/audit-helper';
@@ -27,6 +27,41 @@ const prevEmp = alias(employees, 'prev_emp');
 const newEmp = alias(employees, 'new_emp');
 const transferUser = alias(users, 'transfer_user');
 
+function selectTransferRows() {
+  return db
+    .select({
+      id: assetTransfers.id,
+      assetId: assetTransfers.assetId,
+      assetName: assets.name,
+      transferDate: assetTransfers.transferDate,
+      reason: assetTransfers.reason,
+      transferredBy: transferUser.name,
+      transferredByUsername: transferUser.username,
+      fromRegion: fromRegion.name,
+      toRegion: toRegion.name,
+      fromStation: fromStation.name,
+      toStation: toStation.name,
+      fromDepartment: fromDept.name,
+      toDepartment: toDept.name,
+      previousEmployee: prevEmp.name,
+      newEmployee: newEmp.name,
+      status: assetTransfers.status,
+      approvedByUserId: assetTransfers.approvedByUserId,
+      approvalDate: assetTransfers.approvalDate,
+    })
+    .from(assetTransfers)
+    .leftJoin(assets, eq(assetTransfers.assetId, assets.assetId))
+    .leftJoin(transferUser, eq(assetTransfers.transferredByUserId, transferUser.id))
+    .leftJoin(fromRegion, eq(assetTransfers.fromRegionId, fromRegion.id))
+    .leftJoin(toRegion, eq(assetTransfers.toRegionId, toRegion.id))
+    .leftJoin(fromStation, eq(assetTransfers.fromStationId, fromStation.id))
+    .leftJoin(toStation, eq(assetTransfers.toStationId, toStation.id))
+    .leftJoin(fromDept, eq(assetTransfers.fromDepartmentId, fromDept.id))
+    .leftJoin(toDept, eq(assetTransfers.toDepartmentId, toDept.id))
+    .leftJoin(prevEmp, eq(assetTransfers.previousEmployeeId, prevEmp.id))
+    .leftJoin(newEmp, eq(assetTransfers.newEmployeeId, newEmp.id));
+}
+
 export async function GET(req: NextRequest) {
   try {
     const caller = verifyAuth(req);
@@ -38,7 +73,9 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
-    const conditions: any[] = [];
+    const conditions: Array<SQL | undefined> = [
+      sql`${assetTransfers.id} IN (SELECT MAX(id) FROM asset_transfers GROUP BY asset_id)`,
+    ];
     if (search) {
       const term = `%${search}%`;
       conditions.push(
@@ -52,38 +89,7 @@ export async function GET(req: NextRequest) {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [rows, totalResult] = await Promise.all([
-      db
-        .select({
-          id: assetTransfers.id,
-          assetId: assetTransfers.assetId,
-          assetName: assets.name,
-          transferDate: assetTransfers.transferDate,
-          reason: assetTransfers.reason,
-          transferredBy: transferUser.name,
-          transferredByUsername: transferUser.username,
-          fromRegion: fromRegion.name,
-          toRegion: toRegion.name,
-          fromStation: fromStation.name,
-          toStation: toStation.name,
-          fromDepartment: fromDept.name,
-          toDepartment: toDept.name,
-          previousEmployee: prevEmp.name,
-          newEmployee: newEmp.name,
-          status: assetTransfers.status,
-          approvedByUserId: assetTransfers.approvedByUserId,
-          approvalDate: assetTransfers.approvalDate,
-        })
-        .from(assetTransfers)
-        .leftJoin(assets, eq(assetTransfers.assetId, assets.assetId))
-        .leftJoin(transferUser, eq(assetTransfers.transferredByUserId, transferUser.id))
-        .leftJoin(fromRegion, eq(assetTransfers.fromRegionId, fromRegion.id))
-        .leftJoin(toRegion, eq(assetTransfers.toRegionId, toRegion.id))
-        .leftJoin(fromStation, eq(assetTransfers.fromStationId, fromStation.id))
-        .leftJoin(toStation, eq(assetTransfers.toStationId, toStation.id))
-        .leftJoin(fromDept, eq(assetTransfers.fromDepartmentId, fromDept.id))
-        .leftJoin(toDept, eq(assetTransfers.toDepartmentId, toDept.id))
-        .leftJoin(prevEmp, eq(assetTransfers.previousEmployeeId, prevEmp.id))
-        .leftJoin(newEmp, eq(assetTransfers.newEmployeeId, newEmp.id))
+      selectTransferRows()
         .where(whereClause)
         .orderBy(sql`${assetTransfers.transferDate} DESC`)
         .limit(limit)
@@ -95,7 +101,26 @@ export async function GET(req: NextRequest) {
         .where(whereClause),
     ]);
 
-    return NextResponse.json({ data: rows, total: totalResult[0]?.value || 0, page, limit });
+    const assetIds = Array.from(new Set(rows.map((r) => r.assetId)));
+    const trailRows = assetIds.length > 0
+      ? await selectTransferRows()
+          .where(inArray(assetTransfers.assetId, assetIds))
+          .orderBy(desc(assetTransfers.transferDate), desc(assetTransfers.id))
+      : [];
+
+    const trailByAsset = new Map<string, typeof trailRows>();
+    for (const tr of trailRows) {
+      const list = trailByAsset.get(tr.assetId) ?? [];
+      list.push(tr);
+      trailByAsset.set(tr.assetId, list);
+    }
+
+    const data = rows.map((row) => ({
+      ...row,
+      trail: trailByAsset.get(row.assetId) ?? [row],
+    }));
+
+    return NextResponse.json({ data, total: totalResult[0]?.value || 0, page, limit });
   } catch (err: any) {
     console.error('Fetch transfers error:', err);
     return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
