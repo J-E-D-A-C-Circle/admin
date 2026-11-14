@@ -49,7 +49,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    const updateFields: Record<string, any> = {};
+    const updateFields: Record<string, string | number | boolean | null> = {};
     if (parsed.data.username !== undefined && parsed.data.username !== existing.username) {
       const [conflict] = await db
         .select({ id: users.id })
@@ -95,9 +95,10 @@ export async function PATCH(
         ? `Password reset successfully for ${existing.username}`
         : `User ${existing.username} updated successfully`,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Update user error:', err);
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
   }
 }
 
@@ -137,15 +138,16 @@ export async function DELETE(
     );
 
     return NextResponse.json({ success: true, message: `User ${existing.username} deleted` });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const dbErr = err as { code?: string; errno?: number; message?: string };
     console.error('Delete user error:', err);
-    if (err?.code === 'ER_ROW_IS_REFERENCED_2' || err?.errno === 1451) {
+    if (dbErr?.code === 'ER_ROW_IS_REFERENCED_2' || dbErr?.errno === 1451) {
       return NextResponse.json(
         { message: 'Cannot delete user because audit logs, transfers, or history reference this account. Disable the account instead.' },
         { status: 409 }
       );
     }
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: dbErr?.message || 'Unknown error' }, { status: 500 });
   }
 }
 

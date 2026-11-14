@@ -48,6 +48,12 @@ export function generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string 
 }
 
 // Scopes database queries to only return data the user is permitted to see
-export function getScopeWhere(_user: JwtPayload): { regionId?: number; stationId?: number } {
-  return {};
+export function getScopeWhere(user: JwtPayload): { regionId?: number; stationId?: number } {
+  if (user.role === 'Super Admin') {
+    return {};
+  }
+  const scope: { regionId?: number; stationId?: number } = {};
+  if (user.regionId) scope.regionId = user.regionId;
+  if (user.stationId) scope.stationId = user.stationId;
+  return scope;
 }

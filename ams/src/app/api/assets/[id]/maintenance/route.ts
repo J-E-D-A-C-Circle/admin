@@ -11,6 +11,7 @@ const createMaintenanceSchema = z.object({
   nextServiceDueDate: z.string().optional().nullable(),
   odometerReading: z.number().int().positive().optional().nullable(),
   serviceNotes: z.string().optional().nullable(),
+  markCompleted: z.boolean().optional(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -43,9 +44,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .orderBy(desc(maintenanceSchedules.serviceDate));
 
     return NextResponse.json(records);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Fetch maintenance logs error:', err);
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
   }
 }
 
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: 'Asset not found' }, { status: 404 });
     }
 
-    const { serviceType, serviceDate, nextServiceDueDate, odometerReading, serviceNotes } = parsed.data;
+    const { serviceType, serviceDate, nextServiceDueDate, odometerReading, serviceNotes, markCompleted } = parsed.data;
 
     await db.transaction(async (tx) => {
       // Insert maintenance schedule
@@ -84,9 +86,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         recordedByUserId: caller.sub,
       });
 
-      // Update asset status to Under_Maintenance if it isn't already (and isn't obsolete)
-      if (asset.status !== 'Obsolete' && asset.status !== 'Under_Maintenance') {
-        await tx.update(assets).set({ status: 'Under_Maintenance', updatedAt: new Date() }).where(eq(assets.assetId, assetId));
+      // Update asset status based on service completion flag
+      if (asset.status !== 'Obsolete') {
+        if (markCompleted && asset.status !== 'Active') {
+          await tx.update(assets).set({ status: 'Active', updatedAt: new Date() }).where(eq(assets.assetId, assetId));
+        } else if (!markCompleted && asset.status !== 'Under_Maintenance') {
+          await tx.update(assets).set({ status: 'Under_Maintenance', updatedAt: new Date() }).where(eq(assets.assetId, assetId));
+        }
       }
 
       // Log asset history
@@ -107,8 +113,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
 
     return NextResponse.json({ success: true, message: 'Maintenance logged successfully.' });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Log maintenance error:', err);
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
   }
 }

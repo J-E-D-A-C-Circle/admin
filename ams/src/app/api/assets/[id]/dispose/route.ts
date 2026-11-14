@@ -32,6 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const { disposalMethod, disposalDate, realisedValue, notes } = parsed.data;
+    const rawRv = realisedValue != null ? String(realisedValue).trim() : '';
+    const normalizedRealisedValue =
+      rawRv !== '' && Number.isFinite(Number(rawRv)) ? Number(rawRv).toFixed(2) : null;
 
     await db.transaction(async (tx) => {
       // Record the disposal
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         disposalMethod,
         authorisedByUserId: caller.sub,
         disposalDate: new Date(disposalDate),
-        realisedValue: realisedValue || null,
+        realisedValue: normalizedRealisedValue,
         notes: notes || null,
       });
 

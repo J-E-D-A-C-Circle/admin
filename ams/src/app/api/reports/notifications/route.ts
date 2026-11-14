@@ -25,8 +25,23 @@ export async function GET(req: NextRequest) {
       .limit(50);
 
     return NextResponse.json(list);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Fetch notifications error:', err);
-    return NextResponse.json({ message: 'Internal Server Error', error: err.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const caller = verifyAuth(req);
+    if (!caller) return unauthorizedResponse();
+
+    await db.update(notifications).set({ isRead: true }).where(eq(notifications.isRead, false));
+    return NextResponse.json({ success: true, message: 'All notifications marked as read' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Mark all notifications read error:', err);
+    return NextResponse.json({ message: 'Internal Server Error', error: message }, { status: 500 });
   }
 }

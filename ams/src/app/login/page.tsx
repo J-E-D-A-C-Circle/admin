@@ -71,8 +71,8 @@ export default function LoginPage() {
         return;
       }
       router.push(redirectUrl);
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please check credentials.');
     } finally {
       setLoading(false);
     }

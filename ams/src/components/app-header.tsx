@@ -10,9 +10,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumbs';
-import { Search, Bell, Sun, Moon, Shield } from 'lucide-react';
+import { Search, Bell, Sun, Moon, QrCode } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { api } from '@/lib/api';
+import { QrScannerModal } from '@/components/qr-scanner-modal';
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -38,6 +39,7 @@ export function AppHeader({
   const [user, setUser] = useState<{ name?: string; role?: string; username?: string } | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem('dams_user');
@@ -96,6 +98,17 @@ export function AppHeader({
 
       {/* Actions */}
       <div className="flex items-center space-x-3">
+        {/* Global QR Scanner trigger */}
+        <button
+          type="button"
+          onClick={() => setQrOpen(true)}
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-xs font-semibold text-amber-400 transition-all cursor-pointer"
+          title="Scan Asset QR Sticker"
+        >
+          <QrCode className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">Scan QR</span>
+        </button>
+
         {/* Command search trigger button */}
         <button
           onClick={onOpenCommandPalette}
@@ -125,7 +138,25 @@ export function AppHeader({
             <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden z-50 text-xs">
               <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
                 <span className="font-semibold text-white">System Notifications</span>
-                <span className="text-[10px] text-amber-400 font-mono">{unreadCount} unread</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] text-amber-400 font-mono">{unreadCount} unread</span>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await api.markAllNotificationsRead();
+                          setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+                        } catch {
+                          // ignore transient error
+                        }
+                      }}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 font-medium underline cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="max-h-64 overflow-y-auto divide-y divide-slate-800/60">
                 {notifications.length === 0 ? (
@@ -171,6 +202,8 @@ export function AppHeader({
           </div>
         )}
       </div>
+
+      <QrScannerModal open={qrOpen} onClose={() => setQrOpen(false)} />
     </header>
   );
 }

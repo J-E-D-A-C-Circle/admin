@@ -101,7 +101,7 @@ export default function AssetDetailPage() {
         </p>
         <button
           onClick={() => router.push('/assets')}
-          className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-850 text-white rounded-lg transition-colors font-semibold text-sm shadow-md"
+          className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white rounded-lg transition-colors font-semibold text-sm shadow-md"
         >
           Back to Asset Registry
         </button>
@@ -116,7 +116,7 @@ export default function AssetDetailPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
       {/* Top Header Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-900 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <button
           onClick={() => router.push('/assets')}
           className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors self-start py-1"
@@ -304,31 +304,31 @@ export default function AssetDetailPage() {
                   <span>Asset Specifications</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Brand</p>
                     <p className="text-sm font-medium text-slate-200 mt-0.5">{asset.brand || 'N/A'}</p>
                   </div>
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Model</p>
                     <p className="text-sm font-medium text-slate-200 mt-0.5">{asset.model || 'N/A'}</p>
                   </div>
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">
                       {asset.categoryName === 'Vehicles' ? 'Chassis Number / VIN' : 'Serial Number'}
                     </p>
                     <p className="text-sm font-mono text-slate-250 mt-0.5 font-bold">{asset.serialNumber}</p>
                   </div>
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Subcategory</p>
                     <p className="text-sm font-medium text-slate-250 mt-0.5">{asset.subcategoryName || 'N/A'}</p>
                   </div>
                   {asset.categoryName === 'Vehicles' && (
                     <>
-                      <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                      <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                         <p className="text-xs text-slate-500 font-bold uppercase">License Plate</p>
                         <p className="text-sm font-medium text-slate-200 mt-0.5">{asset.licensePlate || 'N/A'}</p>
                       </div>
-                      <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                      <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                         <p className="text-xs text-slate-500 font-bold uppercase">Engine Number</p>
                         <p className="text-sm font-medium text-slate-200 mt-0.5">{asset.engineNumber || 'N/A'}</p>
                       </div>
@@ -338,7 +338,7 @@ export default function AssetDetailPage() {
                 {asset.description && (
                   <div className="pt-2">
                     <p className="text-xs text-slate-500 font-bold uppercase">Description / Notes</p>
-                    <p className="text-sm text-slate-300 mt-1 whitespace-pre-wrap bg-slate-950/20 p-3 rounded-lg border border-slate-850/40">
+                    <p className="text-sm text-slate-300 mt-1 whitespace-pre-wrap bg-slate-950/20 p-3 rounded-lg border border-slate-800/60">
                       {asset.description}
                     </p>
                   </div>
@@ -352,11 +352,11 @@ export default function AssetDetailPage() {
                   <span>Location & Employee Assignment</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Department</p>
                     <p className="text-sm font-semibold text-slate-250 mt-0.5">{asset.departmentName}</p>
                   </div>
-                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-850/60">
+                  <div className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/70">
                     <p className="text-xs text-slate-500 font-bold uppercase">Assigned Employee</p>
                     {asset.assignedEmployeeName ? (
                       <div>
@@ -459,7 +459,7 @@ export default function AssetDetailPage() {
                             </li>
                           ))}
                         </ul>
-                        <div className="text-[10px] text-slate-500 border-t border-slate-850/80 pt-1 mt-1">
+                        <div className="text-[10px] text-slate-500 border-t border-slate-800/70 pt-1 mt-1">
                           Performed by: <span className="font-semibold text-slate-400">{h.userName} ({h.userUsername})</span>
                         </div>
                       </div>
@@ -481,7 +481,7 @@ export default function AssetDetailPage() {
             {maintenanceLogs.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-12 italic">No maintenance services logged for this vehicle.</p>
             ) : (
-              <div className="overflow-x-auto border border-slate-850 rounded-lg">
+              <div className="overflow-x-auto border border-slate-800 rounded-lg">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 font-semibold uppercase">

@@ -165,7 +165,7 @@ export const disposals = mysqlTable('disposals', {
   disposalMethod: mysqlEnum('disposal_method', ['Auction', 'Scrapped', 'Donated', 'Written_Off']).notNull(),
   authorisedByUserId: int('authorised_by_user_id').references(() => users.id, { onDelete: 'set null' }),
   disposalDate: datetime('disposal_date').notNull(),
-  realisedValue: varchar('realised_value', { length: 20 }),
+  realisedValue: decimal('realised_value', { precision: 14, scale: 2 }),
   notes: text('notes'),
   createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

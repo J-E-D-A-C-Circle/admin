@@ -302,7 +302,7 @@ CREATE TABLE `disposals` (
   `disposal_method` enum('Auction','Scrapped','Donated','Written_Off') NOT NULL,
   `authorised_by_user_id` int DEFAULT NULL,
   `disposal_date` datetime NOT NULL,
-  `realised_value` varchar(20) DEFAULT NULL,
+  `realised_value` decimal(14,2) DEFAULT NULL,
   `notes` text,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

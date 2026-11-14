@@ -381,6 +381,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async markAllNotificationsRead(): Promise<{ success: boolean }> {
+    const res = await fetch(`${BASE_URL}/reports/notifications`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Lookup Management
   async createLookup(type: string, payload: any): Promise<any> {
     const res = await fetch(`${BASE_URL}/lookup/manage`, {

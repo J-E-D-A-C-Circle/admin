@@ -105,7 +105,12 @@ export default function Sidebar({
     onCollapseChange?.(next);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors on logout cleanup
+    }
     localStorage.removeItem('dams_token');
     localStorage.removeItem('dams_user');
     router.push('/login');

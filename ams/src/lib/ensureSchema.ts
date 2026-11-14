@@ -152,6 +152,21 @@ async function runSchemaMigrations() {
         `ALTER TABLE assets MODIFY COLUMN purchase_value DECIMAL(14,2) NULL`
       );
     }
+
+    // 8. Convert disposals.realised_value from VARCHAR to DECIMAL(14,2) if needed
+    const [rvCol] = await poolConnection.query<ColumnTypeRow[]>(
+      `SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'disposals' AND COLUMN_NAME = 'realised_value' LIMIT 1`
+    );
+    if (rvCol?.[0]?.DATA_TYPE && rvCol[0].DATA_TYPE.toLowerCase() !== 'decimal') {
+      await poolConnection.query(
+        `UPDATE disposals SET realised_value = NULL
+         WHERE realised_value IS NOT NULL AND TRIM(realised_value) NOT REGEXP '^[0-9]+(\\.[0-9]+)?$'`
+      );
+      await poolConnection.query(
+        `ALTER TABLE disposals MODIFY COLUMN realised_value DECIMAL(14,2) NULL`
+      );
+    }
   } catch (err) {
     console.error('ensureSchema warning:', err);
     // Reset so a subsequent request can retry if DB was warming up

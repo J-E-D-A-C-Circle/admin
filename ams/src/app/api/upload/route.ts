@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(uploadDir, filename);
     fs.writeFileSync(filePath, buffer);
 
-    return NextResponse.json({ url: `/uploads/verifications/${filename}` }, { status: 201 });
-  } catch (err: any) {
+    return NextResponse.json({ url: `/api/uploads/verifications/${filename}` }, { status: 201 });
+  } catch (err: unknown) {
     console.error('File upload error:', err);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
